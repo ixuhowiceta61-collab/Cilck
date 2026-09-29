@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Click & Earn - Verified Rewards Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1', // indigo
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+Bengali:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    :lang(bn) {
+      font-family: 'Noto Sans Bengali', 'Plus Jakarta Sans', sans-serif;
+    }
+    :lang(hi) {
+      font-family: 'Noto Sans Devanagari', 'Plus Jakarta Sans', sans-serif;
+    }
+    :lang(ar) {
+      font-family: 'Noto Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Floating point credit animation */
+    @keyframes floatUpFade {
+      0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.85);
+      }
+      20% {
+        opacity: 1;
+        transform: translateY(0px) scale(1.05);
+      }
+      80% {
+        opacity: 1;
+        transform: translateY(-15px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-35px) scale(0.9);
+      }
+    }
+    .animate-float-badge {
+      animation: floatUpFade 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Glowing button pulse effect */
+    @keyframes pulseGlowIndigo {
+      0%, 100% {
+        box-shadow: 0 0 35px -5px rgba(99, 102, 241, 0.45), 0 0 15px -3px rgba(168, 85, 247, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 55px 8px rgba(99, 102, 241, 0.75), 0 0 25px 2px rgba(168, 85, 247, 0.6);
+      }
+    }
+    .animate-pulse-glow {
+      animation: pulseGlowIndigo 2.4s infinite;
+    }
+
+    /* Subtle background shimmer for progress */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .shimmer-bar {
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white" id="mainBody">
+
+  <!-- Floating Toast Success Notification -->
+  <div id="toastNotification" class="fixed top-6 right-6 z-50 pointer-events-none hidden">
+    <div class="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-2xl shadow-emerald-500/40 border border-emerald-300">
+      <div class="w-8 h-8 rounded-full bg-slate-950/20 flex items-center justify-center text-lg">✓</div>
+      <div>
+        <div class="text-base font-extrabold tracking-tight" id="toastTitle">+1 Point Earned!</div>
+        <div class="text-xs font-semibold text-emerald-950/80" id="toastSub">+$0.10 USD added to balance</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="border-b border-indigo-950/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between gap-3">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-xl">
+          ⚡
+        </div>
+        <div>
+          <div class="font-extrabold text-lg sm:text-xl tracking-tight leading-none bg-gradient-to-r from-white via-indigo-100 to-purple-200 bg-clip-text text-transparent" id="headerBrand">
+            Click & Earn
+          </div>
+          <div class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-300/70 mt-0.5" id="headerTagline">
+            Verified Global Rewards Platform
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls: Country Detection Pill & Language Switcher -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- Detected Country Badge -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-800/50 text-xs text-indigo-200" id="countryPill" title="Detected Region">
+          <span id="countryFlag">🌐</span>
+          <span class="font-semibold hidden sm:inline" id="countryName">Detecting...</span>
+        </div>
+
+        <!-- Language Selector -->
+        <div class="relative">
+          <select id="languageSelect" onchange="changeLanguage(this.value)" class="appearance-none bg-slate-900 border border-indigo-800/60 text-indigo-100 text-xs font-semibold rounded-xl px-3 py-1.5 pr-7 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <option value="en">English (US/UK)</option>
+            <option value="bn">বাংলা (Bengali)</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="fr">Français (French)</option>
+            <option value="es">Español (Spanish)</option>
+            <option value="ar">العربية (Arabic)</option>
+            <option value="pt">Português (Brazil/PT)</option>
+            <option value="de">Deutsch (German)</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-400">
+            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Hero Area -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-8 sm:py-12 flex flex-col gap-8 sm:gap-10">
+
+    <!-- Hero Card with Gradient -->
+    <section class="relative overflow-hidden rounded-3xl border border-indigo-900/60 bg-gradient-to-b from-indigo-950/70 via-slate-900/80 to-slate-950 p-6 sm:p-12 text-center shadow-2xl">
+      
+      <!-- Ambient Lighting Blobs -->
+      <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 right-1/4 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Verified Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-5" id="heroBadge">
+        ✨ Instant Verification & Direct Payouts
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-4">
+        <span id="heroTitle1">Click, Discover &</span> <br class="hidden sm:inline" />
+        <span class="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent" id="heroHighlight">
+          Earn Real Cash
+        </span>
+      </h1>
+
+      <p class="text-slate-300/80 text-sm sm:text-lg max-w-2xl mx-auto mb-8 sm:mb-10 font-normal leading-relaxed" id="heroSubtitle">
+        Visit verified partner offers and watch your balance grow instantly. Every click awards +1 Point guaranteed.
+      </p>
+
+      <!-- BIG ATTRACTIVE CENTER BUTTON (Core Feature) -->
+      <div class="flex flex-col items-center justify-center gap-4">
+        <button 
+          id="mainEarnButton"
+          onclick="handleClickAndEarn()"
+          class="animate-pulse-glow group relative inline-flex items-center justify-center gap-3.5 px-8 sm:px-14 py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-2xl text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] shadow-2xl cursor-pointer"
+        >
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+            ⚡
+          </div>
+          <span class="tracking-tight" id="mainBtnText">CLAIM +1 POINT NOW</span>
+        </button>
+
+        <!-- Subtext description under button -->
+        <div class="flex items-center gap-2 text-xs sm:text-sm text-indigo-300/80">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="mainBtnSubtext">Opens official partner link · Awards +1 Point ($0.10 USD)</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Real-time Stats Grid (Clicks, Points, Estimated $) -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      
+      <!-- Current Points -->
+      <div class="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-300/80" id="labelPoints">Current Points</span>
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-sm font-bold">
+            ★
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-4xl sm:text-5xl font-black mono tracking-tight text-indigo-400" id="statPoints">0</span>
+          <span class="text-sm font-bold text-slate-400" id="unitPoints">PTS</span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400 flex justify-between items-center" id="statRate">
+          Rate: 10 Points = $1.00 USD
+        </div>
+      </div>
+
+      <!-- Estimated Earnings ($) -->
+      <div class="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-300/80" id="labelEarnings">Estimated Earnings</span>
+          <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-sm font-bold">
+            $
+          </div>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-2xl sm:text-3xl font-bold text-purple-400">$</span>
+          <span class="text-4xl sm:text-5xl font-black mono tracking-tight text-white" id="statEarnings">0.00</span>
+          <span class="text-xs font-semibold text-slate-400 ml-1">USD</span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-purple-300/80 flex justify-between items-center" id="earningsSub">
+          Real-time balance ready to withdraw
+        </div>
+      </div>
+
+      <!-- Total Clicks -->
+      <div class="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-pink-300/80" id="labelClicks">Total Clicks</span>
+          <div class="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center text-sm font-bold">
+            👆
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-4xl sm:text-5xl font-black mono tracking-tight text-pink-400" id="statClicks">0</span>
+          <span class="text-sm font-bold text-slate-400" id="unitClicks">VISITS</span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400 flex justify-between items-center" id="clicksSub">
+          Total verified partner interactions
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Cashout Milestone & Reset Bar -->
+    <section class="p-6 sm:p-7 rounded-3xl border border-indigo-900/50 bg-slate-900/40 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6">
+      
+      <!-- Progress Bar Section -->
+      <div class="w-full md:w-2/3">
+        <div class="flex justify-between items-center text-xs font-bold mb-2">
+          <span class="text-slate-300" id="payoutGoalTitle">Withdrawal Threshold ($5.00 USD / 50 Points)</span>
+          <span class="text-indigo-400 mono" id="payoutGoalPercent">0%</span>
+        </div>
+        <div class="w-full h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/50">
+          <div id="payoutProgressBar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-700 relative overflow-hidden" style="width: 0%">
+            <div class="absolute inset-0 shimmer-bar"></div>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-400 mt-2" id="payoutGoalDesc">
+          Accumulate at least 50 points to unlock instant payout via PayPal, Bank Transfer, or Gift Cards.
+        </div>
+      </div>
+
+      <!-- Reset Progress Button -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+        <button 
+          onclick="openResetModal()"
+          class="px-5 py-3 rounded-2xl text-xs font-bold text-rose-300 hover:text-rose-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer flex items-center gap-2"
+        >
+          <span>↺</span>
+          <span id="resetBtnLabel">Reset Progress</span>
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-indigo-950/80 bg-slate-950/90 py-6 text-slate-500 text-xs">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+      <div>
+        © <span id="currentYear"></span> <span id="footerBrand">Click & Earn</span> · Verified Global Partner Network
+      </div>
+      <div class="text-slate-400 flex items-center gap-3">
+        <span>10 Points = $1.00 USD</span>
+        <span>•</span>
+        <span class="text-emerald-400">● 100% Anti-Fraud Verified</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="resetModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-indigo-900/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-left">
+      <div class="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-400 flex items-center justify-center text-2xl font-bold mb-4">
+        ⚠️
+      </div>
+      <h3 class="text-xl font-black text-white mb-2" id="modalResetTitle">Reset All Progress?</h3>
+      <p class="text-sm text-slate-300 mb-6 leading-relaxed" id="modalResetDesc">
+        This will permanently reset your earned points, click count, and earnings back to zero. This cannot be undone.
+      </p>
+
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          onclick="closeResetModal()"
+          class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+          id="modalCancelBtn"
+        >
+          Cancel
+        </button>
+        <button 
+          onclick="confirmResetAction()"
+          class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors shadow-lg shadow-rose-600/30 cursor-pointer"
+          id="modalConfirmBtn"
+        >
+          Yes, Reset Everything
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // EXACT TARGET STORE / OFFER LINK SPECIFIED BY USER
+    const STORE_OFFER_URL = "https://www.profitableratecpmnetwork.com/h5can1a6kf?key=1f487ec4c12509fbc3ca2b1632129777";
+
+    // Supported translations
+    const TRANSLATIONS = {
+      en: {
+        brandName: "Click & Earn",
+        tagline: "Verified Global Rewards Platform",
+        badgeInstant: "✨ Instant Verification & Direct Payouts",
+        heroTitle1: "Click, Discover &",
+        heroHighlight: "Earn Real Cash",
+        heroSubtitle: "Visit verified partner offers and watch your balance grow instantly. Every click awards +1 Point guaranteed.",
+        buttonText: "CLAIM +1 POINT NOW",
+        buttonSubtext: "Opens official partner link · Awards +1 Point ($0.10 USD)",
+        successMessage: "+1 Point Earned!",
+        successSubtext: "+$0.10 USD added to your wallet balance",
+        currentPointsLabel: "Current Points",
+        pointsUnit: "PTS",
+        rateSubtext: "Conversion Rate: 10 Points = $1.00 USD",
+        earningsLabel: "Estimated Earnings",
+        earningsSubtext: "Real-time balance ready to withdraw",
+        clicksLabel: "Total Clicks",
+        clicksUnit: "VISITS",
+        clicksSubtext: "Total verified partner interactions",
+        resetButton: "Reset Progress",
+        resetModalTitle: "Reset All Progress?",
+        resetModalDesc: "This will permanently reset your earned points, click count, and earnings back to zero. This cannot be undone.",
+        resetConfirmBtn: "Yes, Reset Everything",
+        resetCancelBtn: "Cancel",
+        payoutGoalTitle: "Withdrawal Threshold ($5.00 USD / 50 Points)",
+        payoutGoalDesc: "Accumulate at least 50 points to unlock instant payout via PayPal, Bank Transfer, or Gift Cards.",
+        detectedCountryLabel: "Detected Region",
+        detectingCountry: "Detecting location..."
+      },
+      bn: {
+        brandName: "ক্লিক ও আয়",
+        tagline: "যাচাইকৃত গ্লোবাল রিওয়ার্ড প্ল্যাটফর্ম",
+        badgeInstant: "✨ তাৎক্ষণিক পয়েন্ট ও নগদ আয়",
+        heroTitle1: "ক্লিক করুন এবং",
+        heroHighlight: "আসল টাকা আয় করুন",
+        heroSubtitle: "স্পনসর লিংক ভিজিট করুন এবং সঙ্গে সঙ্গে ওয়ালেটে পয়েন্ট সংগ্রহ করুন। প্রতি ক্লিকে নিশ্চিত +১ পয়েন্ট।",
+        buttonText: "এখনই +১ পয়েন্ট অর্জন করুন",
+        buttonSubtext: "অফিসিয়াল পার্টনার লিংক খুলবে · সাথে সাথে +১ পয়েন্ট ($০.১০) যোগ হবে",
+        successMessage: "+১ পয়েন্ট অর্জিত হয়েছে!",
+        successSubtext: "+$০.১০ ডলার আপনার ব্যালেন্সে যোগ হয়েছে",
+        currentPointsLabel: "বর্তমান পয়েন্ট",
+        pointsUnit: "পয়েন্ট",
+        rateSubtext: "রেট: ১০ পয়েন্ট = ১.০০ ডলার (USD)",
+        earningsLabel: "আনুমানিক আয়",
+        earningsSubtext: "উত্তোলনের জন্য প্রস্তুত মোট জমা",
+        clicksLabel: "মোট ক্লিক",
+        clicksUnit: "ভিজিট",
+        clicksSubtext: "সফলভাবে সম্পন্ন হওয়া ক্লিক সংখ্যা",
+        resetButton: "প্রোগ্রেস রিসেট করুন",
+        resetModalTitle: "সব প্রোগ্রেস মুছে ফেলতে চান?",
+        resetModalDesc: "আপনার সমস্ত অর্জিত পয়েন্ট এবং ক্লিকের হিসাব শূন্য হয়ে যাবে। এই পরিবর্তন আর ফেরানো যাবে না।",
+        resetConfirmBtn: "হ্যাঁ, রিসেট করুন",
+        resetCancelBtn: "বাতিল করুন",
+        payoutGoalTitle: "সর্বনিম্ন উত্তোলনের লক্ষ্য ($৫.০০ / ৫০ পয়েন্ট)",
+        payoutGoalDesc: "৫০ পয়েন্ট পূর্ণ হলেই নগদ টাকা উত্তোলনের সুযোগ আনলক হবে।",
+        detectedCountryLabel: "চিহ্নিত দেশ",
+        detectingCountry: "অবস্থান শনাক্ত করা হচ্ছে..."
+      },
+      hi: {
+        brandName: "क्लिक और कमाएं",
+        tagline: "सत्यापित वैश्विक रिवॉर्ड प्लेटफ़ॉर्म",
+        badgeInstant: "✨ तत्काल पॉइंट और नकद पुरस्कार",
+        heroTitle1: "क्लिक करें और",
+        heroHighlight: "असली नकद कमाएं",
+        heroSubtitle: "पार्टनर लिंक पर जाएं और तुरंत अपने खाते में पॉइंट बढ़ाएं। हर क्लिक पर निश्चित +1 पॉइंट पाएं।",
+        buttonText: "अभी +1 पॉइंट प्राप्त करें",
+        buttonSubtext: "पार्टनर लिंक खुलेगा · तुरंत +1 पॉइंट ($0.10) खाते में जुड़ेगा",
+        successMessage: "+1 पॉइंट मिल गया!",
+        successSubtext: "+$0.10 आपके वॉलेट बैलेंस में जोड़ दिया गया है",
+        currentPointsLabel: "वर्तमान पॉइंट्स",
+        pointsUnit: "अंक",
+        rateSubtext: "दर: 10 पॉइंट्स = $1.00 USD",
+        earningsLabel: "अनुमानित कमाई",
+        earningsSubtext: "निकासी के लिए तैयार कुल राशि",
+        clicksLabel: "कुल क्लिक",
+        clicksUnit: "विज़िट",
+        clicksSubtext: "सत्यापित पार्टनर क्लिक्स की संख्या",
+        resetButton: "प्रगति रीसेट करें",
+        resetModalTitle: "क्या आप सभी पॉइंट्स रीसेट करना चाहते हैं?",
+        resetModalDesc: "यह आपके सभी कमाए गए पॉइंट्स और क्लिक की संख्या को शून्य कर देगा। इसे पूर्ववत नहीं किया जा सकता।",
+        resetConfirmBtn: "हाँ, सब रीसेट करें",
+        resetCancelBtn: "रद्द करें",
+        payoutGoalTitle: "निकासी सीमा ($5.00 USD / 50 पॉइंट्स)",
+        payoutGoalDesc: "PayPal या बैंक ट्रांसफर से तत्काल भुगतान प्राप्त करने के लिए 50 पॉइंट्स पूरे करें।",
+        detectedCountryLabel: "पहचाना गया देश",
+        detectingCountry: "स्थान का पता लगाया जा रहा है..."
+      },
+      fr: {
+        brandName: "Cliquez & Gagnez",
+        tagline: "Plateforme Mondiale de Récompenses Vérifiées",
+        badgeInstant: "✨ Vérification Immédiate & Gains Réels",
+        heroTitle1: "Cliquez et",
+        heroHighlight: "Gagnez de l'Argent Réel",
+        heroSubtitle: "Visitez les offres partenaires exclusives et boostez vos gains instantanément. Chaque clic rapporte +1 Point garanti.",
+        buttonText: "RÉCLAMER +1 POINT MAINTENANT",
+        buttonSubtext: "Ouvre le lien partenaire · Crédite +1 Point (0,10 $ USD)",
+        successMessage: "+1 Point Obtenu !",
+        successSubtext: "+0,10 $ USD ajouté avec succès à votre solde",
+        currentPointsLabel: "Points Actuels",
+        pointsUnit: "PTS",
+        rateSubtext: "Taux de conversion : 10 Points = 1,00 $ USD",
+        earningsLabel: "Gains Estimés",
+        earningsSubtext: "Solde disponible pour retrait immédiat",
+        clicksLabel: "Total des Clics",
+        clicksUnit: "VISITES",
+        clicksSubtext: "Interactions partenaires vérifiées",
+        resetButton: "Réinitialiser les Progrès",
+        resetModalTitle: "Réinitialiser tous vos points ?",
+        resetModalDesc: "Cette action effacera définitivement vos points accumulés et votre compteur de clics. Cette action est irréversible.",
+        resetConfirmBtn: "Oui, tout réinitialiser",
+        resetCancelBtn: "Annuler",
+        payoutGoalTitle: "Objectif de Retrait (5,00 $ USD / 50 Points)",
+        payoutGoalDesc: "Cumulez au moins 50 points pour débloquer votre paiement direct via PayPal ou virement.",
+        detectedCountryLabel: "Région Détectée",
+        detectingCountry: "Localisation en cours..."
+      },
+      es: {
+        brandName: "Clic y Gana",
+        tagline: "Plataforma Global de Recompensas Verificadas",
+        badgeInstant: "✨ Verificación Instantánea y Pagos Directos",
+        heroTitle1: "Haz Clic y",
+        heroHighlight: "Gana Dinero Real",
+        heroSubtitle: "Visita los enlaces oficiales de nuestros patrocinadores y aumenta tus ganancias al instante. Cada clic otorga +1 Punto garantizado.",
+        buttonText: "RECLAMAR +1 PUNTO AHORA",
+        buttonSubtext: "Abre el enlace de socio oficial · Suma +1 Punto ($0.10 USD)",
+        successMessage: "¡+1 Punto Ganado!",
+        successSubtext: "+$0.10 USD acreditados a tu saldo",
+        currentPointsLabel: "Puntos Actuales",
+        pointsUnit: "PTS",
+        rateSubtext: "Tasa de conversión: 10 Puntos = $1.00 USD",
+        earningsLabel: "Ganancias Estimadas",
+        earningsSubtext: "Saldo listo para retirar en cualquier momento",
+        clicksLabel: "Total de Clics",
+        clicksUnit: "VISITAS",
+        clicksSubtext: "Interacciones verificadas con socios",
+        resetButton: "Restablecer Progreso",
+        resetModalTitle: "¿Restablecer todo el progreso?",
+        resetModalDesc: "Esta acción devolverá a cero todos tus puntos ganados y el contador de clics. No se puede deshacer.",
+        resetConfirmBtn: "Sí, restablecer todo",
+        resetCancelBtn: "Cancelar",
+        payoutGoalTitle: "Meta de Retiro Mínimo ($5.00 USD / 50 Puntos)",
+        payoutGoalDesc: "Alcanza los 50 puntos para habilitar el retiro inmediato mediante PayPal o tarjeta de regalo.",
+        detectedCountryLabel: "País Detectado",
+        detectingCountry: "Detectando ubicación..."
+      },
+      ar: {
+        brandName: "انقر واربح",
+        tagline: "منصة المكافآت العالمية الموثوقة",
+        badgeInstant: "✨ نقاط فورية وسحب أرباح حقيقية",
+        heroTitle1: "انقر الآن و",
+        heroHighlight: "اربح أموالاً حقيقية",
+        heroSubtitle: "قم بزيارة روابط الشركاء المعتمدين واكسب النقاط على الفور. كل نقرة تمنحك +1 نقطة مؤكدة.",
+        buttonText: "احصل على +1 نقطة الآن",
+        buttonSubtext: "يفتح رابط الشريك الرسمي · يمنح +1 نقطة (0.10 دولار)",
+        successMessage: "تم كسب +1 نقطة بنجاح!",
+        successSubtext: "تمت إضافة +0.10 دولار إلى رصيدك الحالي",
+        currentPointsLabel: "النقاط الحالية",
+        pointsUnit: "نقطة",
+        rateSubtext: "معدل التحويل: 10 نقاط = 1.00 دولار أمريكي",
+        earningsLabel: "الأرباح المقدرة",
+        earningsSubtext: "رصيدك المتاح للسحب الفوري",
+        clicksLabel: "إجمالي النقرات",
+        clicksUnit: "زيارة",
+        clicksSubtext: "عدد الزيارات المكتملة بنجاح",
+        resetButton: "إعادة ضبط التقدم",
+        resetModalTitle: "هل تريد مسح جميع النقاط؟",
+        resetModalDesc: "سيؤدي هذا إلى تصفير كافة النقاط والنقرات المسجلة في حسابك ولا يمكن التراجع عن هذا الإجراء.",
+        resetConfirmBtn: "نعم، أعد الضبط بالكامل",
+        resetCancelBtn: "إلغاء",
+        payoutGoalTitle: "الحد الأدنى للسحب (5.00 دولار / 50 نقطة)",
+        payoutGoalDesc: "اجمع 50 نقطة للتمكن من سحب أرباحك مباشرة عبر PayPal أو الحساب البنكي.",
+        detectedCountryLabel: "الدولة المكتشفة",
+        detectingCountry: "جاري تحديد الموقع..."
+      },
+      pt: {
+        brandName: "Clique & Ganhe",
+        tagline: "Plataforma Global de Recompensas Verificadas",
+        badgeInstant: "✨ Verificação Instantânea e Pagamentos Reais",
+        heroTitle1: "Clique e",
+        heroHighlight: "Ganhe Dinheiro Real",
+        heroSubtitle: "Visite links de parceiros oficiais e acumule pontos imediatamente. Cada clique garante +1 Ponto direto na sua conta.",
+        buttonText: "RESGATAR +1 PONTO AGORA",
+        buttonSubtext: "Abre o link oficial de parceiro · Concede +1 Ponto ($0,10 USD)",
+        successMessage: "+1 Ponto Ganho!",
+        successSubtext: "+$0,10 USD adicionados ao seu saldo",
+        currentPointsLabel: "Pontos Atuais",
+        pointsUnit: "PTS",
+        rateSubtext: "Taxa de Conversão: 10 Pontos = $1,00 USD",
+        earningsLabel: "Ganhos Estimados",
+        earningsSubtext: "Saldo em tempo real disponível para saque",
+        clicksLabel: "Total de Cliques",
+        clicksUnit: "VISITAS",
+        clicksSubtext: "Total de visitas verificadas",
+        resetButton: "Redefinir Progresso",
+        resetModalTitle: "Redefinir todo o progresso?",
+        resetModalDesc: "Isso zerará permanentemente seus pontos acumulados e contagem de cliques. Esta ação não pode ser desfeita.",
+        resetConfirmBtn: "Sim, Redefinir Tudo",
+        resetCancelBtn: "Cancelar",
+        payoutGoalTitle: "Meta Mínima de Saque ($5,00 USD / 50 Pontos)",
+        payoutGoalDesc: "Acumule pelo menos 50 pontos para liberar o pagamento via PayPal, PIX ou Vale Presente.",
+        detectedCountryLabel: "País Detectado",
+        detectingCountry: "Detectando localização..."
+      },
+      de: {
+        brandName: "Klick & Verdien",
+        tagline: "Verifizierte globale Belohnungsplattform",
+        badgeInstant: "✨ Sofortige Gutschrift & Echte Auszahlungen",
+        heroTitle1: "Klicken &",
+        heroHighlight: "Echtes Geld Verdienen",
+        heroSubtitle: "Besuche exklusive Partnerangebote und baue dein Guthaben sofort auf. Jeder Klick bringt dir garantiert +1 Punkt.",
+        buttonText: "JETZT +1 PUNKT SICHERN",
+        buttonSubtext: "Öffnet offiziellen Partnerlink · Schreibt +1 Punkt (0,10 $ USD) gut",
+        successMessage: "+1 Punkt Verdient!",
+        successSubtext: "+0,10 $ USD wurden deinem Guthaben hinzugefügt",
+        currentPointsLabel: "Aktuelle Punkte",
+        pointsUnit: "PKT",
+        rateSubtext: "Umrechnung: 10 Punkte = 1,00 $ USD",
+        earningsLabel: "Geschätzter Verdienst",
+        earningsSubtext: "Sofort auszahlbares Guthaben",
+        clicksLabel: "Gesamte Klicks",
+        clicksUnit: "BESUCHE",
+        clicksSubtext: "Bestätigte Interaktionen",
+        resetButton: "Fortschritt Zurücksetzen",
+        resetModalTitle: "Gesamten Fortschritt zurücksetzen?",
+        resetModalDesc: "Dadurch werden alle deine gesammelten Punkte und Klicks unwiderruflich auf null zurückgesetzt.",
+        resetConfirmBtn: "Ja, alles zurücksetzen",
+        resetCancelBtn: "Abbrechen",
+        payoutGoalTitle: "Auszahlungsziel (5,00 $ USD / 50 Punkte)",
+        payoutGoalDesc: "Erreiche 50 Punkte für eine direkte Auszahlung per PayPal oder Banküberweisung.",
+        detectedCountryLabel: "Erkanntes Land",
+        detectingCountry: "Standort wird ermittelt..."
+      }
+    };
+
+    // Country Code to Language Code Mapping
+    const COUNTRY_LANG_MAP = {
+      BD: 'bn',               // Bangladesh -> Bangla
+      IN: 'hi', PK: 'hi',     // India, Pakistan -> Hindi
+      US: 'en', GB: 'en', CA: 'en', AU: 'en', NZ: 'en', IE: 'en', // English
+      FR: 'fr', BE: 'fr',     // France, Belgium -> French
+      ES: 'es', MX: 'es', AR: 'es', CO: 'es', // Spain, Mexico, Argentina -> Spanish
+      SA: 'ar', AE: 'ar', EG: 'ar', QA: 'ar', // Saudi Arabia, UAE, Egypt -> Arabic
+      BR: 'pt', PT: 'pt',     // Brazil, Portugal -> Portuguese
+      DE: 'de', AT: 'de'      // Germany, Austria -> German
+    };
+
+    const COUNTRY_FLAGS = {
+      BD: '🇧🇩', IN: '🇮🇳', PK: '🇵🇰', US: '🇺🇸', GB: '🇬🇧', CA: '🇨🇦', AU: '🇦🇺',
+      FR: '🇫🇷', BE: '🇧🇪', ES: '🇪🇸', MX: '🇲🇽', AR: '🇦🇷', SA: '🇸🇦', AE: '🇦🇪',
+      EG: '🇪🇬', BR: '🇧🇷', PT: '🇵🇹', DE: '🇩🇪', AT: '🇦🇹'
+    };
+
+    // Application state
+    let points = parseInt(localStorage.getItem('ce_points') || '0', 10);
+    let clicks = parseInt(localStorage.getItem('ce_clicks') || '0', 10);
+    let currentLang = localStorage.getItem('ce_lang') || 'en';
+    let userCountryCode = 'US';
+    let userCountryName = 'Detecting...';
+
+    // DOM Elements
+    const statPoints = document.getElementById('statPoints');
+    const statEarnings = document.getElementById('statEarnings');
+    const statClicks = document.getElementById('statClicks');
+    const payoutProgressBar = document.getElementById('payoutProgressBar');
+    const payoutGoalPercent = document.getElementById('payoutGoalPercent');
+    const countryFlag = document.getElementById('countryFlag');
+    const countryName = document.getElementById('countryName');
+    const languageSelect = document.getElementById('languageSelect');
+    const toastNotification = document.getElementById('toastNotification');
+    const resetModal = document.getElementById('resetModal');
+
+    // Update numbers & progress
+    function updateStats() {
+      statPoints.textContent = points;
+      const dollar = (points / 10).toFixed(2);
+      statEarnings.textContent = dollar;
+      statClicks.textContent = clicks;
+
+      // $5.00 goal (50 points)
+      const pct = Math.min(100, Math.round(((points / 10) / 5.0) * 100));
+      payoutProgressBar.style.width = pct + '%';
+      payoutGoalPercent.textContent = pct + '%';
+
+      localStorage.setItem('ce_points', points.toString());
+      localStorage.setItem('ce_clicks', clicks.toString());
+    }
+
+    // Melodic Web Audio Synth Chime
+    function playChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        freqs.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.07);
+          gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.07 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.07);
+          osc.stop(now + idx * 0.07 + 0.36);
+        });
+      } catch (e) {
+        // Safe fallback if audio blocked
+      }
+    }
+
+    // Trigger Point and Open Link
+    function handleClickAndEarn() {
+      // 1. Open the exact store URL in a new tab
+      window.open(STORE_OFFER_URL, '_blank', 'noopener,noreferrer');
+
+      // 2. Increment points & click count
+      points += 1;
+      clicks += 1;
+      updateStats();
+
+      // 3. Play chime sound
+      playChime();
+
+      // 4. Show success toast with translation
+      showSuccessToast();
+    }
+
+    // Show animated toast
+    let toastTimeout = null;
+    function showSuccessToast() {
+      const t = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+      document.getElementById('toastTitle').textContent = t.successMessage;
+      document.getElementById('toastSub').textContent = t.successSubtext;
+
+      toastNotification.classList.remove('hidden');
+      toastNotification.classList.remove('animate-float-badge');
+      // trigger reflow
+      void toastNotification.offsetWidth;
+      toastNotification.classList.add('animate-float-badge');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastNotification.classList.add('hidden');
+      }, 2300);
+    }
+
+    // Change and render language
+    function changeLanguage(lang) {
+      if (!TRANSLATIONS[lang]) lang = 'en';
+      currentLang = lang;
+      localStorage.setItem('ce_lang', lang);
+      languageSelect.value = lang;
+
+      const t = TRANSLATIONS[lang];
+      document.documentElement.lang = lang;
+
+      // Handle RTL for Arabic
+      if (lang === 'ar') {
+        document.documentElement.setAttribute('dir', 'rtl');
+      } else {
+        document.documentElement.setAttribute('dir', 'ltr');
+      }
+
+      // Update all translated strings
+      document.getElementById('headerBrand').textContent = t.brandName;
+      document.getElementById('footerBrand').textContent = t.brandName;
+      document.getElementById('headerTagline').textContent = t.tagline;
+      document.getElementById('heroBadge').textContent = t.badgeInstant;
+      document.getElementById('heroTitle1').textContent = t.heroTitle1;
+      document.getElementById('heroHighlight').textContent = t.heroHighlight;
+      document.getElementById('heroSubtitle').textContent = t.heroSubtitle;
+      document.getElementById('mainBtnText').textContent = t.buttonText;
+      document.getElementById('mainBtnSubtext').textContent = t.buttonSubtext;
+      
+      document.getElementById('labelPoints').textContent = t.currentPointsLabel;
+      document.getElementById('unitPoints').textContent = t.pointsUnit;
+      document.getElementById('statRate').textContent = t.rateSubtext;
+
+      document.getElementById('labelEarnings').textContent = t.earningsLabel;
+      document.getElementById('earningsSub').textContent = t.earningsSubtext;
+
+      document.getElementById('labelClicks').textContent = t.clicksLabel;
+      document.getElementById('unitClicks').textContent = t.clicksUnit;
+      document.getElementById('clicksSub').textContent = t.clicksSubtext;
+
+      document.getElementById('payoutGoalTitle').textContent = t.payoutGoalTitle;
+      document.getElementById('payoutGoalDesc').textContent = t.payoutGoalDesc;
+      document.getElementById('resetBtnLabel').textContent = t.resetButton;
+
+      document.getElementById('modalResetTitle').textContent = t.resetModalTitle;
+      document.getElementById('modalResetDesc').textContent = t.resetModalDesc;
+      document.getElementById('modalConfirmBtn').textContent = t.resetConfirmBtn;
+      document.getElementById('modalCancelBtn').textContent = t.resetCancelBtn;
+    }
+
+    // Automatic Country Detection with free ipapi.co
+    async function detectUserCountry() {
+      // If user manually chose language before, respect it unless first visit
+      const savedLang = localStorage.getItem('ce_lang');
+
+      try {
+        const response = await fetch('https://ipapi.co/json/', { cache: 'no-cache' });
+        if (!response.ok) throw new Error('ipapi request failed');
+        const data = await response.json();
+        
+        if (data && data.country_code) {
+          userCountryCode = data.country_code.toUpperCase();
+          userCountryName = data.country_name || userCountryCode;
+          
+          // Display country and flag
+          countryFlag.textContent = COUNTRY_FLAGS[userCountryCode] || '📍';
+          countryName.textContent = userCountryName;
+
+          // If no manual preference, auto switch language based on user's country
+          if (!savedLang && COUNTRY_LANG_MAP[userCountryCode]) {
+            changeLanguage(COUNTRY_LANG_MAP[userCountryCode]);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Primary country detection (ipapi.co) unavailable, trying secondary fallback...', err);
+        
+        // Secondary fallback
+        try {
+          const fallbackRes = await fetch('https://api.country.is/', { cache: 'no-cache' });
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            if (fallbackData.country) {
+              userCountryCode = fallbackData.country.toUpperCase();
+              countryFlag.textContent = COUNTRY_FLAGS[userCountryCode] || '📍';
+              countryName.textContent = userCountryCode;
+              if (!savedLang && COUNTRY_LANG_MAP[userCountryCode]) {
+                changeLanguage(COUNTRY_LANG_MAP[userCountryCode]);
+                return;
+              }
+            }
+          }
+        } catch (e2) {
+          console.warn('Secondary fallback also blocked or offline. Using default English.');
+        }
+
+        // Final graceful fallback: Default to English without throwing errors
+        countryFlag.textContent = '🌐';
+        countryName.textContent = 'Global (EN)';
+      }
+
+      // If user had a saved language, apply it
+      if (savedLang) {
+        changeLanguage(savedLang);
+      } else {
+        changeLanguage('en');
+      }
+    }
+
+    // Reset Modal Handlers
+    function openResetModal() {
+      resetModal.classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      resetModal.classList.add('hidden');
+    }
+
+    function confirmResetAction() {
+      points = 0;
+      clicks = 0;
+      updateStats();
+      closeResetModal();
+    }
+
+    // Set Copyright Year
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+    // Initialize
+    updateStats();
+    detectUserCountry();
+  </script>
+</body>
+</html>

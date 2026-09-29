@@ -1,0 +1,6 @@
+{
+  "name": "Watch & Earn Rewards Portal",
+  "description": "Modern Click to Earn platform where users watch complete videos to earn points and cash out real rewards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
