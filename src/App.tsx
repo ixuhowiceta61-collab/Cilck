@@ -21,7 +21,19 @@ import {
   Zap,
   DollarSign,
   TrendingUp,
-  Award
+  Award,
+  Lock,
+  User,
+  LogOut,
+  Mail,
+  KeyRound,
+  ShieldCheck,
+  X,
+  Wallet,
+  CreditCard,
+  Building2,
+  Coins,
+  ArrowUpRight
 } from 'lucide-react';
 import {
   TRANSLATIONS,
@@ -33,9 +45,63 @@ import {
 
 // Exact partner store offer link specified by user
 const STORE_OFFER_URL = "https://www.profitableratecpmnetwork.com/h5can1a6kf?key=1f487ec4c12509fbc3ca2b1632129777";
+const MIN_WITHDRAW_USD = 100.0;
+
+interface AuthUser {
+  name: string;
+  email: string;
+}
+
+interface RegisteredAccount {
+  name: string;
+  email: string;
+  password: string;
+}
 
 export default function App() {
-  // State: Points and Clicks stored in localStorage
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    const saved = localStorage.getItem('ce_auth_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [registeredAccounts, setRegisteredAccounts] = useState<RegisteredAccount[]>(() => {
+    const saved = localStorage.getItem('ce_registered_users');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  // Modal tab: 'login' | 'signup'
+  const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(() => {
+    // If not logged in on initial load, show auth modal
+    const saved = localStorage.getItem('ce_auth_user');
+    return !saved;
+  });
+
+  // Auth form inputs
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Points and Clicks State
   const [points, setPoints] = useState<number>(() => {
     const saved = localStorage.getItem('ce_points');
     return saved !== null ? parseInt(saved, 10) : 0;
@@ -65,7 +131,7 @@ export default function App() {
   const [countryFlag, setCountryFlag] = useState<string>('🌐');
   const [isDetectingLocation, setIsDetectingLocation] = useState<boolean>(true);
 
-  // Success celebration toast
+  // Visual cues
   const [showToast, setShowToast] = useState<boolean>(false);
   const [pointsGlow, setPointsGlow] = useState<boolean>(false);
 
@@ -73,6 +139,12 @@ export default function App() {
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
+
+  // Withdraw / Payout Modal State
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState<boolean>(false);
+  const [selectedPayoutMethod, setSelectedPayoutMethod] = useState<'paypal' | 'crypto' | 'bank'>('paypal');
+  const [destinationDetails, setDestinationDetails] = useState<string>('');
+  const [withdrawSubmitStatus, setWithdrawSubmitStatus] = useState<string | null>(null);
 
   // Synchronize to localStorage
   useEffect(() => {
@@ -88,8 +160,19 @@ export default function App() {
   }, [soundEnabled]);
 
   useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('ce_auth_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('ce_auth_user');
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem('ce_registered_users', JSON.stringify(registeredAccounts));
+  }, [registeredAccounts]);
+
+  useEffect(() => {
     localStorage.setItem('ce_lang', currentLang);
-    // RTL Handling for Arabic
     if (currentLang === 'ar') {
       document.documentElement.setAttribute('dir', 'rtl');
     } else {
@@ -120,15 +203,13 @@ export default function App() {
           setCountryName(name);
           setCountryFlag(flag);
 
-          // If user hasn't explicitly picked a language before, auto switch based on country mapping
           if (!savedLang && COUNTRY_LANG_MAP[code]) {
             setCurrentLang(COUNTRY_LANG_MAP[code]);
           }
           setIsDetectingLocation(false);
           return;
         }
-      } catch (err) {
-        // Fallback detection
+      } catch {
         try {
           const fallbackRes = await fetch('https://api.country.is/', { cache: 'no-cache' });
           if (fallbackRes.ok) {
@@ -147,7 +228,7 @@ export default function App() {
             }
           }
         } catch {
-          // Graceful fallback to default
+          // Graceful fallback
         }
       }
 
@@ -174,7 +255,6 @@ export default function App() {
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const now = ctx.currentTime;
-      // High, cheerful ascending arpeggio (C5 -> E5 -> G5 -> C6)
       const frequencies = [523.25, 659.25, 783.99, 1046.50];
       frequencies.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
@@ -196,13 +276,111 @@ export default function App() {
     }
   };
 
-  // Main Click & Earn Handler (Core Feature)
+  // Active translation dictionary
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+
+  // 10 Points = $1.00 USD ($0.10 / pt)
+  const dollarEarningsNumber = points / 10;
+  const dollarEarnings = dollarEarningsNumber.toFixed(2);
+  const isEligibleForPayout = dollarEarningsNumber >= MIN_WITHDRAW_USD;
+  const neededMoreAmount = Math.max(0, MIN_WITHDRAW_USD - dollarEarningsNumber).toFixed(2);
+  const payoutPercent = Math.min(100, Math.round((dollarEarningsNumber / MIN_WITHDRAW_USD) * 100));
+
+  // Handle Login submission
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+
+    const emailClean = loginEmail.trim().toLowerCase();
+    const pass = loginPassword;
+
+    if (!emailClean || !pass) {
+      setAuthError(t.authErrorFillFields);
+      return;
+    }
+
+    const match = registeredAccounts.find(
+      u => u.email.toLowerCase() === emailClean && u.password === pass
+    );
+
+    let loggedUser: AuthUser;
+    if (match) {
+      loggedUser = { name: match.name, email: match.email };
+    } else if (registeredAccounts.length === 0) {
+      const parsedName = emailClean.split('@')[0];
+      const capitalized = parsedName.charAt(0).toUpperCase() + parsedName.slice(1);
+      loggedUser = { name: capitalized, email: emailClean };
+      setRegisteredAccounts(prev => [...prev, { name: capitalized, email: emailClean, password: pass }]);
+    } else {
+      setAuthError(t.authErrorInvalidCredentials);
+      return;
+    }
+
+    setCurrentUser(loggedUser);
+    setIsAuthModalOpen(false);
+    setLoginPassword('');
+    playChime();
+  };
+
+  // Handle Sign Up submission
+  const handleSignupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+
+    const name = signupName.trim();
+    const emailClean = signupEmail.trim().toLowerCase();
+    const pass = signupPassword;
+    const confirmPass = signupConfirmPassword;
+
+    if (!name || !emailClean || !pass) {
+      setAuthError(t.authErrorFillFields);
+      return;
+    }
+
+    if (pass !== confirmPass) {
+      setAuthError(t.authErrorPassMismatch);
+      return;
+    }
+
+    const existing = registeredAccounts.find(u => u.email.toLowerCase() === emailClean);
+    if (existing) {
+      setAuthError("An account with this email already exists. Please log in.");
+      return;
+    }
+
+    const newAcc: RegisteredAccount = { name, email: emailClean, password: pass };
+    setRegisteredAccounts(prev => [...prev, newAcc]);
+    setCurrentUser({ name, email: emailClean });
+    setIsAuthModalOpen(false);
+    setSignupPassword('');
+    setSignupConfirmPassword('');
+    playChime();
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to log out of your session?")) {
+      setCurrentUser(null);
+      setIsAuthModalOpen(true);
+      setAuthTab('login');
+      setIsWithdrawModalOpen(false);
+    }
+  };
+
+  // Main Click & Earn Handler (Blocked if not logged in)
   const handleClickAndEarn = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      setAuthTab('login');
+      setAuthError("Please log in or sign up first to earn points!");
+      return;
+    }
+
     // 1. Open exact store link in a new tab
     try {
       window.open(STORE_OFFER_URL, '_blank', 'noopener,noreferrer');
     } catch {
-      // popup blocker fallback link
+      // popup blocker fallback
     }
 
     // 2. Award +1 Point immediately and +1 click count
@@ -219,6 +397,39 @@ export default function App() {
     setTimeout(() => setShowToast(false), 2500);
   };
 
+  // Open Withdraw Modal
+  const handleOpenWithdrawModal = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      setAuthTab('login');
+      setAuthError("Please sign in or create an account to request a payout.");
+      return;
+    }
+    setWithdrawSubmitStatus(null);
+    setIsWithdrawModalOpen(true);
+  };
+
+  // Handle Payout Submission
+  const handlePayoutSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isEligibleForPayout) {
+      return;
+    }
+    if (!destinationDetails.trim()) {
+      alert("Please provide your destination account details.");
+      return;
+    }
+
+    const alertMsg = t.withdrawSuccessAlert.replace('${amount}', '$' + dollarEarnings);
+    setWithdrawSubmitStatus(alertMsg);
+    playChime();
+    setTimeout(() => {
+      setIsWithdrawModalOpen(false);
+      setWithdrawSubmitStatus(null);
+      alert(alertMsg);
+    }, 1500);
+  };
+
   // Reset Progress confirmation
   const handleConfirmReset = () => {
     setPoints(0);
@@ -228,276 +439,34 @@ export default function App() {
     setShowResetModal(false);
   };
 
-  // Active translation dictionary
-  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
-
-  // 10 Points = $1.00 USD ($0.10 / pt)
-  const dollarEarnings = (points / 10).toFixed(2);
-  const payoutGoal = 5.0; // $5.00 goal (50 points)
-  const payoutPercent = Math.min(100, Math.round(((points / 10) / payoutGoal) * 100));
-
-  // Standalone HTML template string (to copy or download)
-  const getSingleHtmlFileCode = () => {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Click & Earn - Verified Rewards Portal</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
-          }
-        }
-      }
-    };
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 35px -5px rgba(99, 102, 241, 0.5), 0 0 15px -3px rgba(168, 85, 247, 0.4); }
-      50% { box-shadow: 0 0 55px 8px rgba(99, 102, 241, 0.8), 0 0 25px 2px rgba(168, 85, 247, 0.6); }
-    }
-    .pulse-btn { animation: pulseGlow 2.4s infinite; }
-    @keyframes floatUp {
-      0% { opacity: 0; transform: translateY(20px) scale(0.85); }
-      20% { opacity: 1; transform: translateY(0px) scale(1.05); }
-      80% { opacity: 1; transform: translateY(-15px) scale(1); }
-      100% { opacity: 0; transform: translateY(-35px) scale(0.9); }
-    }
-    .animate-float { animation: floatUp 2.2s forwards; }
-  </style>
-</head>
-<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white" id="mainBody">
-  <!-- Toast Notification -->
-  <div id="toastNotification" class="fixed top-6 right-6 z-50 pointer-events-none hidden">
-    <div class="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-2xl border border-emerald-300">
-      <div class="w-8 h-8 rounded-full bg-slate-950/20 flex items-center justify-center text-lg">✓</div>
-      <div>
-        <div class="text-base font-extrabold" id="toastTitle">+1 Point Earned!</div>
-        <div class="text-xs font-semibold text-emerald-950/80" id="toastSub">+$0.10 USD added to balance</div>
-      </div>
-    </div>
-  </div>
-
-  <header class="border-b border-indigo-950/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg text-white font-black text-xl">⚡</div>
-        <div>
-          <div class="font-extrabold text-lg sm:text-xl text-white" id="headerBrand">Click & Earn</div>
-          <div class="text-[10px] sm:text-xs font-semibold text-indigo-300/70" id="headerTagline">Verified Global Rewards Platform</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-2 sm:gap-3">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-800/50 text-xs text-indigo-200">
-          <span id="countryFlag">🌐</span>
-          <span class="font-semibold hidden sm:inline" id="countryName">Detecting...</span>
-        </div>
-        <select id="languageSelect" onchange="changeLanguage(this.value)" class="bg-slate-900 border border-indigo-800/60 text-indigo-100 text-xs font-semibold rounded-xl px-3 py-1.5 focus:outline-none">
-          <option value="en">English (US/UK)</option>
-          <option value="bn">বাংলা (Bengali)</option>
-          <option value="hi">हिन्दी (Hindi)</option>
-          <option value="fr">Français (French)</option>
-          <option value="es">Español (Spanish)</option>
-          <option value="ar">العربية (Arabic)</option>
-          <option value="pt">Português (Brazil)</option>
-          <option value="de">Deutsch (German)</option>
-        </select>
-      </div>
-    </div>
-  </header>
-
-  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-8 sm:py-12 flex flex-col gap-8">
-    <section class="relative overflow-hidden rounded-3xl border border-indigo-900/60 bg-gradient-to-b from-indigo-950/70 via-slate-900/80 to-slate-950 p-6 sm:p-12 text-center shadow-2xl">
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-5" id="heroBadge">
-        ✨ Instant Verification & Direct Payouts
-      </div>
-      <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white mb-4">
-        <span id="heroTitle1">Click, Discover &</span> <br class="hidden sm:inline" />
-        <span class="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent" id="heroHighlight">Earn Real Cash</span>
-      </h1>
-      <p class="text-slate-300/80 text-sm sm:text-lg max-w-2xl mx-auto mb-8 font-normal" id="heroSubtitle">
-        Visit verified partner offers and watch your balance grow instantly. Every click awards +1 Point guaranteed.
-      </p>
-
-      <div class="flex flex-col items-center justify-center gap-4">
-        <button id="mainEarnButton" onclick="handleClickAndEarn()" class="pulse-btn inline-flex items-center justify-center gap-3.5 px-8 sm:px-14 py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-2xl text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:scale-[1.03] active:scale-[0.98] transition-all shadow-2xl cursor-pointer">
-          <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white">⚡</div>
-          <span id="mainBtnText">CLAIM +1 POINT NOW</span>
-        </button>
-        <div class="text-xs sm:text-sm text-indigo-300/80" id="mainBtnSubtext">
-          Opens official partner link · Awards +1 Point ($0.10 USD)
-        </div>
-      </div>
-    </section>
-
-    <!-- Stats -->
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-      <div class="p-6 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md">
-        <div class="text-xs font-bold uppercase text-indigo-300/80 mb-3" id="labelPoints">Current Points</div>
-        <div class="text-4xl sm:text-5xl font-black mono text-indigo-400 flex items-baseline gap-2">
-          <span id="statPoints">0</span>
-          <span class="text-sm font-bold text-slate-400" id="unitPoints">PTS</span>
-        </div>
-        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400" id="statRate">Rate: 10 Points = $1.00 USD</div>
-      </div>
-
-      <div class="p-6 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md">
-        <div class="text-xs font-bold uppercase text-purple-300/80 mb-3" id="labelEarnings">Estimated Earnings</div>
-        <div class="text-4xl sm:text-5xl font-black mono text-white flex items-baseline gap-1">
-          <span class="text-purple-400">$</span>
-          <span id="statEarnings">0.00</span>
-          <span class="text-xs font-semibold text-slate-400 ml-1">USD</span>
-        </div>
-        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-purple-300/80" id="earningsSub">Real-time balance ready to withdraw</div>
-      </div>
-
-      <div class="p-6 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md">
-        <div class="text-xs font-bold uppercase text-pink-300/80 mb-3" id="labelClicks">Total Clicks</div>
-        <div class="text-4xl sm:text-5xl font-black mono text-pink-400 flex items-baseline gap-2">
-          <span id="statClicks">0</span>
-          <span class="text-sm font-bold text-slate-400" id="unitClicks">VISITS</span>
-        </div>
-        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400" id="clicksSub">Total verified partner interactions</div>
-      </div>
-    </section>
-
-    <!-- Cashout Progress & Reset -->
-    <section class="p-6 rounded-3xl border border-indigo-900/50 bg-slate-900/40 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="w-full md:w-2/3">
-        <div class="flex justify-between items-center text-xs font-bold mb-2">
-          <span class="text-slate-300" id="payoutGoalTitle">Withdrawal Threshold ($5.00 USD / 50 Points)</span>
-          <span class="text-indigo-400 mono" id="payoutGoalPercent">0%</span>
-        </div>
-        <div class="w-full h-3.5 bg-slate-800 rounded-full overflow-hidden">
-          <div id="payoutProgressBar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-700" style="width: 0%"></div>
-        </div>
-      </div>
-      <button onclick="handleResetConfirm()" class="px-5 py-3 rounded-2xl text-xs font-bold text-rose-300 hover:text-rose-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer" id="resetBtnLabel">
-        Reset Progress
-      </button>
-    </section>
-  </main>
-
-  <script>
-    const STORE_OFFER_URL = "${STORE_OFFER_URL}";
-    let points = parseInt(localStorage.getItem('ce_points') || '0', 10);
-    let clicks = parseInt(localStorage.getItem('ce_clicks') || '0', 10);
-    let currentLang = localStorage.getItem('ce_lang') || 'en';
-
-    function updateStats() {
-      document.getElementById('statPoints').textContent = points;
-      document.getElementById('statEarnings').textContent = (points / 10).toFixed(2);
-      document.getElementById('statClicks').textContent = clicks;
-      const pct = Math.min(100, Math.round(((points / 10) / 5.0) * 100));
-      document.getElementById('payoutProgressBar').style.width = pct + '%';
-      document.getElementById('payoutGoalPercent').textContent = pct + '%';
-      localStorage.setItem('ce_points', points.toString());
-      localStorage.setItem('ce_clicks', clicks.toString());
-    }
-
-    function handleClickAndEarn() {
-      window.open(STORE_OFFER_URL, '_blank', 'noopener,noreferrer');
-      points += 1;
-      clicks += 1;
-      updateStats();
-      showToast();
-    }
-
-    function showToast() {
-      const toast = document.getElementById('toastNotification');
-      toast.classList.remove('hidden', 'animate-float');
-      void toast.offsetWidth;
-      toast.classList.add('animate-float');
-      setTimeout(() => { toast.classList.add('hidden'); }, 2300);
-    }
-
-    function handleResetConfirm() {
-      if (confirm('Reset all points and clicks to zero?')) {
-        points = 0;
-        clicks = 0;
-        updateStats();
-      }
-    }
-
-    // Auto country detection
-    async function detectCountry() {
-      try {
-        const res = await fetch('https://ipapi.co/json/');
-        if (res.ok) {
-          const data = await res.json();
-          document.getElementById('countryName').textContent = data.country_name || data.country_code;
-          const map = { BD: 'bn', IN: 'hi', PK: 'hi', FR: 'fr', BE: 'fr', ES: 'es', MX: 'es', AR: 'es', SA: 'ar', AE: 'ar', EG: 'ar', BR: 'pt', PT: 'pt', DE: 'de', AT: 'de' };
-          if (data.country_code && map[data.country_code]) {
-            changeLanguage(map[data.country_code]);
-          }
-        }
-      } catch (e) {
-        document.getElementById('countryName').textContent = 'Global (EN)';
-      }
-    }
-
-    const dict = ${JSON.stringify(TRANSLATIONS)};
-    function changeLanguage(lang) {
-      if (!dict[lang]) lang = 'en';
-      currentLang = lang;
-      localStorage.setItem('ce_lang', lang);
-      document.getElementById('languageSelect').value = lang;
-      if (lang === 'ar') document.documentElement.setAttribute('dir', 'rtl');
-      else document.documentElement.setAttribute('dir', 'ltr');
-      const t = dict[lang];
-      document.getElementById('headerBrand').textContent = t.brandName;
-      document.getElementById('heroBadge').textContent = t.badgeInstant;
-      document.getElementById('heroTitle1').textContent = t.heroTitle1;
-      document.getElementById('heroHighlight').textContent = t.heroHighlight;
-      document.getElementById('heroSubtitle').textContent = t.heroSubtitle;
-      document.getElementById('mainBtnText').textContent = t.buttonText;
-      document.getElementById('mainBtnSubtext').textContent = t.buttonSubtext;
-      document.getElementById('labelPoints').textContent = t.currentPointsLabel;
-      document.getElementById('statRate').textContent = t.rateSubtext;
-      document.getElementById('labelEarnings').textContent = t.earningsLabel;
-      document.getElementById('earningsSub').textContent = t.earningsSubtext;
-      document.getElementById('labelClicks').textContent = t.clicksLabel;
-      document.getElementById('clicksSub').textContent = t.clicksSubtext;
-      document.getElementById('resetBtnLabel').textContent = t.resetButton;
-    }
-
-    updateStats();
-    detectCountry();
-  </script>
-</body>
-</html>`;
-  };
-
   const handleCopyCode = () => {
-    const code = getSingleHtmlFileCode();
-    navigator.clipboard.writeText(code);
-    setHasCopiedCode(true);
-    setTimeout(() => setHasCopiedCode(false), 2000);
+    fetch('/click-and-earn.html')
+      .then(res => res.text())
+      .then(code => {
+        navigator.clipboard.writeText(code);
+        setHasCopiedCode(true);
+        setTimeout(() => setHasCopiedCode(false), 2000);
+      })
+      .catch(() => {
+        setHasCopiedCode(true);
+        setTimeout(() => setHasCopiedCode(false), 2000);
+      });
   };
 
   const handleDownloadCode = () => {
-    const code = getSingleHtmlFileCode();
-    const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'click-and-earn.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    fetch('/click-and-earn.html')
+      .then(res => res.text())
+      .then(code => {
+        const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'click-and-earn.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
   };
 
   return (
@@ -537,7 +506,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Controls: Country Badge, Language Switcher, Sound & Single HTML Export */}
+          {/* Controls: Country Badge, Language Switcher, Withdraw Button & Auth Section */}
           <div className="flex items-center gap-2 sm:gap-3">
             
             {/* Detected Country Pill */}
@@ -573,6 +542,16 @@ export default function App() {
               </div>
             </div>
 
+            {/* WITHDRAW BUTTON (Requirement 1: Matches current UI theme) */}
+            <button
+              onClick={handleOpenWithdrawModal}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/25 transition-all cursor-pointer flex items-center gap-1.5 transform hover:scale-[1.02] active:scale-[0.98]"
+              title="Request Payout / Withdrawal"
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span>{t.withdrawButton}</span>
+            </button>
+
             {/* Sound Toggle */}
             <button
               onClick={() => setSoundEnabled(prev => !prev)}
@@ -582,10 +561,43 @@ export default function App() {
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-rose-400" />}
             </button>
 
+            {/* Logged in User Pill + Logout Button */}
+            {currentUser ? (
+              <div className="flex items-center gap-2 pl-2 border-l border-indigo-900/60">
+                <div className="hidden md:flex flex-col text-right">
+                  <span className="text-xs font-bold text-white max-w-[120px] truncate">
+                    {currentUser.name}
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-mono">
+                    Verified Member
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700/60 hover:border-rose-700/60 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Logout of current session"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                  <span>{t.logoutButton}</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setIsAuthModalOpen(true);
+                  setAuthTab('login');
+                }}
+                className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>{t.loginTab} / {t.signupTab}</span>
+              </button>
+            )}
+
             {/* Single HTML Code Export Modal Trigger */}
             <button
               onClick={() => setShowExportModal(true)}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-900/70 to-purple-900/70 hover:from-indigo-800 hover:to-purple-800 border border-indigo-700/60 text-xs font-bold text-indigo-100 transition-all cursor-pointer shadow-sm"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-900/70 to-purple-900/70 hover:from-indigo-800 hover:to-purple-800 border border-indigo-700/60 text-xs font-bold text-indigo-100 transition-all cursor-pointer shadow-sm"
               title="View & copy single standalone HTML code"
             >
               <Code2 className="w-3.5 h-3.5 text-indigo-300" />
@@ -599,8 +611,38 @@ export default function App() {
       {/* Main Container */}
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 sm:py-12 flex flex-col gap-8 sm:gap-10">
         
+        {/* Auth Locked Banner (When user is not signed in) */}
+        {!currentUser && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm font-bold text-amber-200">
+                  {t.guestLockedBadge}
+                </div>
+                <div className="text-[11px] text-amber-300/80">
+                  Sign in or create an account to record your points and request payouts.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setIsAuthModalOpen(true);
+                setAuthTab('signup');
+              }}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all cursor-pointer whitespace-nowrap"
+            >
+              {t.signupButton}
+            </button>
+          </div>
+        )}
+
         {/* Hero Card with Purple/Indigo Gradient */}
-        <section className="relative overflow-hidden rounded-3xl border border-indigo-900/60 bg-gradient-to-b from-indigo-950/70 via-slate-900/80 to-slate-950 p-6 sm:p-12 text-center shadow-2xl">
+        <section className={`relative overflow-hidden rounded-3xl border border-indigo-900/60 bg-gradient-to-b from-indigo-950/70 via-slate-900/80 to-slate-950 p-6 sm:p-12 text-center shadow-2xl transition-all ${
+          !currentUser ? 'opacity-95' : ''
+        }`}>
           
           {/* Ambient Lighting Blobs */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
@@ -624,7 +666,7 @@ export default function App() {
             {t.heroSubtitle}
           </p>
 
-          {/* CORE FEATURE 1: BIG ATTRACTIVE CENTER BUTTON */}
+          {/* BIG ATTRACTIVE CENTER BUTTON (Prompts auth modal if not signed in) */}
           <div className="flex flex-col items-center justify-center gap-4">
             <button
               onClick={handleClickAndEarn}
@@ -646,7 +688,7 @@ export default function App() {
 
         </section>
 
-        {/* CORE FEATURE 2: STATS CARDS (Current Points, Estimated Earnings in $, Total Clicks) */}
+        {/* STATS CARDS (Current Points, Estimated Earnings in $, Total Clicks) */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           
           {/* Card 1: Current Points */}
@@ -674,7 +716,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Card 2: Estimated Earnings ($) */}
+          {/* Card 2: Estimated Earnings ($) with Direct Withdraw Trigger */}
           <div className="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md shadow-lg flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-purple-300/80">
@@ -695,6 +737,13 @@ export default function App() {
             </div>
             <div className="mt-4 pt-3 border-t border-slate-800/80 text-xs text-purple-300/80 flex justify-between items-center">
               <span>{t.earningsSubtext}</span>
+              <button
+                onClick={handleOpenWithdrawModal}
+                className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5 cursor-pointer underline text-[11px]"
+              >
+                <span>{t.withdrawButton}</span>
+                <ArrowUpRight className="w-3 h-3" />
+              </button>
             </div>
           </div>
 
@@ -723,17 +772,17 @@ export default function App() {
 
         </section>
 
-        {/* Milestone Threshold & Reset Progress Bar */}
+        {/* Milestone Threshold & Withdraw / Reset Bar */}
         <section className="p-6 sm:p-7 rounded-3xl border border-indigo-900/50 bg-slate-900/40 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6">
           
-          <div className="w-full md:w-2/3">
+          <div className="w-full md:w-7/12">
             <div className="flex justify-between items-center text-xs font-bold mb-2">
               <span className="text-slate-300">{t.payoutGoalTitle}</span>
-              <span className="text-indigo-400 font-mono">{payoutPercent}%</span>
+              <span className="text-emerald-400 font-mono font-bold">{payoutPercent}%</span>
             </div>
             <div className="w-full h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/50">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-700 relative overflow-hidden"
+                className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 rounded-full transition-all duration-700 relative overflow-hidden"
                 style={{ width: `${payoutPercent}%` }}
               >
                 <div className="absolute inset-0 shimmer-bar" />
@@ -744,10 +793,19 @@ export default function App() {
             </div>
           </div>
 
+          {/* Action Buttons: Withdraw & Reset */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             <button
+              onClick={handleOpenWithdrawModal}
+              className="px-5 py-3 rounded-2xl text-xs font-black text-slate-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:from-emerald-300 hover:to-teal-200 transition-all shadow-lg shadow-emerald-500/25 cursor-pointer flex items-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Wallet className="w-4 h-4 text-slate-950" />
+              <span>{t.withdrawButton}</span>
+            </button>
+
+            <button
               onClick={() => setShowResetModal(true)}
-              className="px-5 py-3 rounded-2xl text-xs font-bold text-rose-300 hover:text-rose-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer flex items-center gap-2"
+              className="px-4 py-3 rounded-2xl text-xs font-bold text-rose-300 hover:text-rose-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>{t.resetButton}</span>
@@ -776,6 +834,416 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* ========================================================= */}
+      {/* WITHDRAW / PAYOUT MODAL (REQUIREMENT 2 & 3) */}
+      {/* ========================================================= */}
+      {isWithdrawModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-slate-900/95 backdrop-blur-2xl border border-indigo-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setIsWithdrawModalOpen(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+              title="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center text-slate-950 text-xl font-bold shadow-lg shadow-emerald-500/30">
+                <Wallet className="w-6 h-6 text-slate-950" />
+              </div>
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  {t.withdrawModalTitle}
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  {t.withdrawModalSubtitle}
+                </p>
+              </div>
+            </div>
+
+            {/* Current Balance Card */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-indigo-900/60 mb-5 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                  {t.currentBalanceLabel}
+                </span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl sm:text-4xl font-black font-mono text-emerald-400">
+                    ${dollarEarnings}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    USD ({points} {t.pointsUnit})
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[11px] text-slate-400 block font-semibold">Min Threshold</span>
+                <span className="text-sm font-extrabold text-indigo-300 font-mono">$100.00 USD</span>
+              </div>
+            </div>
+
+            {/* REQUIREMENT 3: Minimum Withdrawal Threshold Notice/Warning */}
+            {!isEligibleForPayout ? (
+              <div className="mb-5 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-200">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                  <div className="text-xs leading-relaxed">
+                    <span className="font-extrabold block text-rose-300 mb-0.5">
+                      {t.payoutMinNotice}
+                    </span>
+                    <span>
+                      {t.payoutNeedMorePrefix}
+                      <strong className="font-mono font-bold text-white text-sm underline">{neededMoreAmount}</strong>
+                      {t.payoutNeedMoreSuffix}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-5 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-xs font-semibold">
+                  {t.payoutEligibleNotice}
+                </span>
+              </div>
+            )}
+
+            {/* Form for Payout Method & Details */}
+            <form onSubmit={handlePayoutSubmit} className="space-y-4">
+              
+              {/* Payout Options */}
+              <div>
+                <label className="block text-xs font-bold text-indigo-200 mb-2">
+                  {t.selectPayoutMethod}
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  
+                  {/* PayPal */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPayoutMethod('paypal')}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                      selectedPayoutMethod === 'paypal'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-white ring-1 ring-emerald-500/40'
+                        : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800/40'
+                    }`}
+                  >
+                    <CreditCard className="w-4 h-4 text-emerald-400" />
+                    <span className="text-[11px] font-bold">PayPal</span>
+                  </button>
+
+                  {/* Crypto */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPayoutMethod('crypto')}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                      selectedPayoutMethod === 'crypto'
+                        ? 'border-indigo-500 bg-indigo-500/10 text-white ring-1 ring-indigo-500/40'
+                        : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800/40'
+                    }`}
+                  >
+                    <Coins className="w-4 h-4 text-indigo-400" />
+                    <span className="text-[11px] font-bold">USDT / BTC</span>
+                  </button>
+
+                  {/* Bank Transfer */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPayoutMethod('bank')}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                      selectedPayoutMethod === 'bank'
+                        ? 'border-purple-500 bg-purple-500/10 text-white ring-1 ring-purple-500/40'
+                        : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800/40'
+                    }`}
+                  >
+                    <Building2 className="w-4 h-4 text-purple-400" />
+                    <span className="text-[11px] font-bold">Bank Wire</span>
+                  </button>
+
+                </div>
+              </div>
+
+              {/* Destination Details */}
+              <div>
+                <label className="block text-xs font-bold text-indigo-200 mb-1.5">
+                  {t.accountDetailsLabel}
+                </label>
+                <input
+                  type="text"
+                  required={isEligibleForPayout}
+                  value={destinationDetails}
+                  onChange={(e) => setDestinationDetails(e.target.value)}
+                  placeholder={
+                    selectedPayoutMethod === 'paypal'
+                      ? 'PayPal account email (e.g. name@paypal.com)'
+                      : selectedPayoutMethod === 'crypto'
+                      ? 'USDT (TRC20) or BTC wallet address'
+                      : 'Bank Account Number / IBAN & Routing SWIFT'
+                  }
+                  className="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-indigo-900/60 focus:border-emerald-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Submit Payout Button: Disabled if balance < $100 USD */}
+              <button
+                type="submit"
+                disabled={!isEligibleForPayout}
+                className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all shadow-xl flex items-center justify-center gap-2 ${
+                  isEligibleForPayout
+                    ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-emerald-500/30 cursor-pointer transform hover:scale-[1.01]'
+                    : 'bg-slate-800/80 text-slate-500 border border-slate-700/40 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <Wallet className="w-4 h-4" />
+                <span>{t.confirmWithdrawBtn}</span>
+              </button>
+
+              {!isEligibleForPayout && (
+                <p className="text-[11px] text-center text-slate-400">
+                  🔒 Button unlocked automatically once you reach $100.00 USD (1,000 points).
+                </p>
+              )}
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* AUTHENTICATION MODAL (LOGIN & SIGN UP GLASSMORPHISM) */}
+      {/* ========================================================= */}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900/90 backdrop-blur-2xl border border-indigo-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+            
+            {/* Close button (allowed if already logged in) */}
+            {currentUser && (
+              <button
+                onClick={() => setIsAuthModalOpen(false)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+                title="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+
+            {/* Modal Header */}
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 mx-auto flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-500/30 mb-3">
+                <Zap className="w-6 h-6 fill-white" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {t.authModalTitle}
+              </h2>
+              <p className="text-xs text-slate-300 mt-1">
+                {t.authModalSubtitle}
+              </p>
+            </div>
+
+            {/* Tab Buttons (Login vs Sign Up) */}
+            <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-950/80 border border-indigo-900/60 mb-6">
+              <button
+                onClick={() => {
+                  setAuthTab('login');
+                  setAuthError(null);
+                }}
+                className={`py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                  authTab === 'login'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {t.loginTab}
+              </button>
+              <button
+                onClick={() => {
+                  setAuthTab('signup');
+                  setAuthError(null);
+                }}
+                className={`py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                  authTab === 'signup'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {t.signupTab}
+              </button>
+            </div>
+
+            {/* Error Alert Box */}
+            {authError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold text-center flex items-center justify-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {/* LOGIN FORM */}
+            {authTab === 'login' && (
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-indigo-200 mb-1.5">
+                    {t.emailLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder={t.emailPlaceholder}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-indigo-900/60 focus:border-indigo-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
+                    />
+                    <Mail className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-indigo-200 mb-1.5">
+                    {t.passwordLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder={t.passwordPlaceholder}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-indigo-900/60 focus:border-indigo-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
+                    />
+                    <KeyRound className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 rounded-xl font-extrabold text-xs sm:text-sm text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 transition-all shadow-xl shadow-indigo-600/30 cursor-pointer"
+                >
+                  {t.loginButton}
+                </button>
+
+                <div className="text-center pt-2">
+                  <span className="text-xs text-slate-400">{t.noAccountYet}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab('signup');
+                      setAuthError(null);
+                    }}
+                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300 ml-1 underline cursor-pointer"
+                  >
+                    {t.signupTab}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* SIGN UP FORM */}
+            {authTab === 'signup' && (
+              <form onSubmit={handleSignupSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-indigo-200 mb-1.5">
+                    {t.fullNameLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
+                      placeholder={t.fullNamePlaceholder}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-indigo-900/60 focus:border-indigo-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
+                    />
+                    <User className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-indigo-200 mb-1.5">
+                    {t.emailLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      placeholder={t.emailPlaceholder}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-indigo-900/60 focus:border-indigo-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
+                    />
+                    <Mail className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-indigo-200 mb-1.5">
+                    {t.passwordLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      required
+                      minLength={4}
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      placeholder={t.passwordPlaceholder}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-indigo-900/60 focus:border-indigo-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
+                    />
+                    <KeyRound className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-indigo-200 mb-1.5">
+                    {t.confirmPasswordLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      required
+                      minLength={4}
+                      value={signupConfirmPassword}
+                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                      placeholder={t.confirmPasswordPlaceholder}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-indigo-900/60 focus:border-indigo-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
+                    />
+                    <ShieldCheck className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 rounded-xl font-extrabold text-xs sm:text-sm text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 transition-all shadow-xl shadow-indigo-600/30 cursor-pointer"
+                >
+                  {t.signupButton}
+                </button>
+
+                <div className="text-center pt-2">
+                  <span className="text-xs text-slate-400">{t.alreadyHaveAccount}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab('login');
+                      setAuthError(null);
+                    }}
+                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300 ml-1 underline cursor-pointer"
+                  >
+                    {t.loginTab}
+                  </button>
+                </div>
+              </form>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* Reset Confirmation Modal */}
       {showResetModal && (
@@ -813,12 +1281,12 @@ export default function App() {
           <div className="w-full max-w-3xl bg-slate-900 border border-indigo-900/80 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-black text-white">Single Standalone HTML File</h3>
-                <p className="text-xs text-slate-400">Complete, standalone HTML file that runs anywhere in any browser directly.</p>
+                <h3 className="text-lg font-black text-white">Single Standalone HTML File (with Withdraw & Auth)</h3>
+                <p className="text-xs text-slate-400">Complete, standalone HTML file with withdraw modal and $100 threshold logic included.</p>
               </div>
               <button
                 onClick={() => setShowExportModal(false)}
-                className="text-slate-400 hover:text-white text-lg p-1"
+                className="text-slate-400 hover:text-white text-lg p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -837,12 +1305,12 @@ export default function App() {
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                <span>Download .html File</span>
+                <span>Download /click-and-earn.html</span>
               </button>
             </div>
 
             <div className="flex-1 overflow-auto bg-slate-950 p-4 rounded-2xl border border-indigo-950 font-mono text-[11px] text-indigo-200 select-all">
-              <pre className="whitespace-pre">{getSingleHtmlFileCode()}</pre>
+              <pre className="whitespace-pre">Please click "Copy Complete HTML" or "Download /click-and-earn.html" to get the complete single file.</pre>
             </div>
           </div>
         </div>
