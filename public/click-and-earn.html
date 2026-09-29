@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Click & Earn - Verified Rewards Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+Bengali:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    :lang(bn) { font-family: 'Noto Sans Bengali', 'Plus Jakarta Sans', sans-serif; }
+    :lang(hi) { font-family: 'Noto Sans Devanagari', 'Plus Jakarta Sans', sans-serif; }
+    :lang(ar) { font-family: 'Noto Sans Arabic', 'Plus Jakarta Sans', sans-serif; }
+
+    /* Glassmorphism styling */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(99, 102, 241, 0.28);
+    }
+    .glass-input {
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      transition: all 0.2s ease;
+    }
+    .glass-input:focus {
+      border-color: #818cf8;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);
+    }
+
+    /* Floating point credit animation */
+    @keyframes floatUpFade {
+      0% { opacity: 0; transform: translateY(20px) scale(0.85); }
+      20% { opacity: 1; transform: translateY(0px) scale(1.05); }
+      80% { opacity: 1; transform: translateY(-15px) scale(1); }
+      100% { opacity: 0; transform: translateY(-35px) scale(0.9); }
+    }
+    .animate-float-badge {
+      animation: floatUpFade 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Glowing button pulse effect */
+    @keyframes pulseGlowIndigo {
+      0%, 100% {
+        box-shadow: 0 0 35px -5px rgba(99, 102, 241, 0.45), 0 0 15px -3px rgba(168, 85, 247, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 55px 8px rgba(99, 102, 241, 0.75), 0 0 25px 2px rgba(168, 85, 247, 0.6);
+      }
+    }
+    .animate-pulse-glow {
+      animation: pulseGlowIndigo 2.4s infinite;
+    }
+
+    /* Shimmer effect for progress bar */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .shimmer-bar {
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white relative" id="mainBody">
+
+  <!-- Floating Toast Success Notification -->
+  <div id="toastNotification" class="fixed top-6 right-6 z-50 pointer-events-none hidden">
+    <div class="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-2xl shadow-emerald-500/40 border border-emerald-300">
+      <div class="w-8 h-8 rounded-full bg-slate-950/20 flex items-center justify-center text-lg">✓</div>
+      <div>
+        <div class="text-base font-extrabold tracking-tight" id="toastTitle">+1 Point Earned!</div>
+        <div class="text-xs font-semibold text-emerald-950/80" id="toastSub">+$0.10 USD added to balance</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="border-b border-indigo-950/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between gap-3">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-xl">
+          ⚡
+        </div>
+        <div>
+          <div class="font-extrabold text-lg sm:text-xl tracking-tight leading-none bg-gradient-to-r from-white via-indigo-100 to-purple-200 bg-clip-text text-transparent" id="headerBrand">
+            Click & Earn
+          </div>
+          <div class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-300/70 mt-0.5" id="headerTagline">
+            Verified Global Rewards Platform
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls: Country, Language, Withdraw & Auth Section -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- Detected Country Badge -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-800/50 text-xs text-indigo-200" id="countryPill" title="Detected Region">
+          <span id="countryFlag">🌐</span>
+          <span class="font-semibold hidden sm:inline" id="countryName">Detecting...</span>
+        </div>
+
+        <!-- Language Selector -->
+        <div class="relative">
+          <select id="languageSelect" onchange="changeLanguage(this.value)" class="appearance-none bg-slate-900 border border-indigo-800/60 text-indigo-100 text-xs font-semibold rounded-xl px-3 py-1.5 pr-7 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <option value="en">English (US/UK)</option>
+            <option value="bn">বাংলা (Bengali)</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="fr">Français (French)</option>
+            <option value="es">Español (Spanish)</option>
+            <option value="ar">العربية (Arabic)</option>
+            <option value="pt">Português (Brazil)</option>
+            <option value="de">Deutsch (German)</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-400">
+            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+          </div>
+        </div>
+
+        <!-- WITHDRAW BUTTON (Requirement 1: Matching UI theme) -->
+        <button 
+          onclick="openWithdrawModal()"
+          class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/25 transition-all cursor-pointer flex items-center gap-1.5 transform hover:scale-[1.02] active:scale-[0.98]"
+          title="Request Payout / Withdrawal"
+        >
+          <span>💳</span>
+          <span id="navWithdrawText">Withdraw</span>
+        </button>
+
+        <!-- Logged In User Pill & Logout Button -->
+        <div id="userProfileArea" class="hidden items-center gap-2 pl-1 border-l border-indigo-900/60">
+          <div class="hidden md:flex flex-col text-right">
+            <span class="text-xs font-bold text-white max-w-[120px] truncate" id="navUserName">User</span>
+            <span class="text-[10px] text-emerald-400 font-mono">Verified Active</span>
+          </div>
+          <button 
+            onclick="handleLogout()"
+            class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700/60 hover:border-rose-700/60 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            title="Logout of session"
+          >
+            <span>🚪</span>
+            <span id="navLogoutText">Logout</span>
+          </button>
+        </div>
+
+        <!-- Login Trigger if logged out -->
+        <button 
+          id="navLoginBtn"
+          onclick="openAuthModal('login')"
+          class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🔑</span>
+          <span id="navLoginText">Login / Sign Up</span>
+        </button>
+
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Hero Area -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-8 sm:py-12 flex flex-col gap-8 sm:gap-10">
+
+    <!-- Auth Lock Notice (Visible when logged out) -->
+    <div id="authNoticeBanner" class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-base">
+          🔒
+        </div>
+        <div>
+          <div class="text-xs sm:text-sm font-bold text-amber-200" id="authNoticeTitle">
+            Dashboard Locked - Please Sign In to Start Earning Points
+          </div>
+          <div class="text-[11px] text-amber-300/70">
+            Create a free account or log in to track your points and request cash withdrawals.
+          </div>
+        </div>
+      </div>
+      <button 
+        onclick="openAuthModal('signup')"
+        class="whitespace-nowrap px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/25 cursor-pointer"
+      >
+        Sign Up Free
+      </button>
+    </div>
+
+    <!-- Hero Card with Gradient -->
+    <section class="relative overflow-hidden rounded-3xl border border-indigo-900/60 bg-gradient-to-b from-indigo-950/70 via-slate-900/80 to-slate-950 p-6 sm:p-12 text-center shadow-2xl">
+      
+      <!-- Ambient Lighting Blobs -->
+      <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 right-1/4 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Verified Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-5" id="heroBadge">
+        ✨ Instant Verification & Direct Payouts
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-4">
+        <span id="heroTitle1">Click, Discover &</span> <br class="hidden sm:inline" />
+        <span class="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent" id="heroHighlight">
+          Earn Real Cash
+        </span>
+      </h1>
+
+      <p class="text-slate-300/80 text-sm sm:text-lg max-w-2xl mx-auto mb-8 sm:mb-10 font-normal leading-relaxed" id="heroSubtitle">
+        Visit verified partner offers and watch your balance grow instantly. Every click awards +1 Point guaranteed.
+      </p>
+
+      <!-- BIG ATTRACTIVE CENTER BUTTON (Core Feature) -->
+      <div class="flex flex-col items-center justify-center gap-4">
+        <button 
+          id="mainEarnButton"
+          onclick="handleClickAndEarn()"
+          class="animate-pulse-glow group relative inline-flex items-center justify-center gap-3.5 px-8 sm:px-14 py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-2xl text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] shadow-2xl cursor-pointer"
+        >
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+            ⚡
+          </div>
+          <span class="tracking-tight" id="mainBtnText">CLAIM +1 POINT NOW</span>
+        </button>
+
+        <!-- Subtext description under button -->
+        <div class="flex items-center gap-2 text-xs sm:text-sm text-indigo-300/80">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="mainBtnSubtext">Opens official partner link · Awards +1 Point ($0.10 USD)</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Real-time Stats Grid -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      
+      <!-- Current Points -->
+      <div class="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-300/80" id="labelPoints">Current Points</span>
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-sm font-bold">
+            ★
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-4xl sm:text-5xl font-black mono tracking-tight text-indigo-400" id="statPoints">0</span>
+          <span class="text-sm font-bold text-slate-400" id="unitPoints">PTS</span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400 flex justify-between items-center" id="statRate">
+          Rate: 10 Points = $1.00 USD
+        </div>
+      </div>
+
+      <!-- Estimated Earnings ($) with Withdraw Trigger -->
+      <div class="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-300/80" id="labelEarnings">Estimated Earnings</span>
+          <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-sm font-bold">
+            $
+          </div>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-2xl sm:text-3xl font-bold text-purple-400">$</span>
+          <span class="text-4xl sm:text-5xl font-black mono tracking-tight text-white" id="statEarnings">0.00</span>
+          <span class="text-xs font-semibold text-slate-400 ml-1">USD</span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-purple-300/80 flex justify-between items-center">
+          <span id="earningsSub">Real-time balance ready to withdraw</span>
+          <button onclick="openWithdrawModal()" class="text-emerald-400 hover:text-emerald-300 font-bold underline cursor-pointer text-xs flex items-center gap-0.5">
+            <span>Withdraw</span> ↗
+          </button>
+        </div>
+      </div>
+
+      <!-- Total Clicks -->
+      <div class="relative overflow-hidden p-6 sm:p-7 rounded-3xl border border-indigo-900/60 bg-slate-900/60 backdrop-blur-md shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-pink-300/80" id="labelClicks">Total Clicks</span>
+          <div class="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center text-sm font-bold">
+            👆
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-4xl sm:text-5xl font-black mono tracking-tight text-pink-400" id="statClicks">0</span>
+          <span class="text-sm font-bold text-slate-400" id="unitClicks">VISITS</span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400 flex justify-between items-center" id="clicksSub">
+          Total verified partner interactions
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Cashout Milestone & Withdraw / Reset Bar -->
+    <section class="p-6 sm:p-7 rounded-3xl border border-indigo-900/50 bg-slate-900/40 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6">
+      
+      <!-- Progress Bar Section -->
+      <div class="w-full md:w-7/12">
+        <div class="flex justify-between items-center text-xs font-bold mb-2">
+          <span class="text-slate-300" id="payoutGoalTitle">Withdrawal Threshold ($100.00 USD / 1,000 Points)</span>
+          <span class="text-emerald-400 font-mono font-bold" id="payoutGoalPercent">0%</span>
+        </div>
+        <div class="w-full h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/50">
+          <div id="payoutProgressBar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 rounded-full transition-all duration-700 relative overflow-hidden" style="width: 0%">
+            <div class="absolute inset-0 shimmer-bar"></div>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-400 mt-2" id="payoutGoalDesc">
+          Accumulate at least 1,000 points ($100.00 USD) to unlock instant payout via PayPal, Crypto, or Bank Transfer.
+        </div>
+      </div>
+
+      <!-- Action Buttons: Withdraw & Reset -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+        <button 
+          onclick="openWithdrawModal()"
+          class="px-5 py-3 rounded-2xl text-xs font-black text-slate-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:from-emerald-300 hover:to-teal-200 transition-all shadow-lg shadow-emerald-500/25 cursor-pointer flex items-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <span>💳</span>
+          <span id="milestoneWithdrawBtn">Withdraw Funds</span>
+        </button>
+
+        <button 
+          onclick="openResetModal()"
+          class="px-4 py-3 rounded-2xl text-xs font-bold text-rose-300 hover:text-rose-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer flex items-center gap-2"
+        >
+          <span>↺</span>
+          <span id="resetBtnLabel">Reset Progress</span>
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-indigo-950/80 bg-slate-950/90 py-6 text-slate-500 text-xs">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+      <div>
+        © <span id="currentYear"></span> <span id="footerBrand">Click & Earn</span> · Verified Global Partner Network
+      </div>
+      <div class="text-slate-400 flex items-center gap-3">
+        <span>10 Points = $1.00 USD</span>
+        <span>•</span>
+        <span class="text-emerald-400">● 100% Anti-Fraud Verified</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================= -->
+  <!-- WITHDRAW / PAYOUT MODAL (REQUIREMENT 2 & 3) -->
+  <!-- ========================================================= -->
+  <div id="withdrawModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-lg glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl relative border border-indigo-500/30">
+      
+      <!-- Close Button -->
+      <button 
+        onclick="closeWithdrawModal()" 
+        class="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+        title="Close"
+      >
+        ✕
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3.5 mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center text-slate-950 text-2xl font-bold shadow-lg shadow-emerald-500/30">
+          💳
+        </div>
+        <div>
+          <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="modalWithdrawTitle">
+            Request Payout
+          </h3>
+          <p class="text-xs text-slate-300 mt-0.5" id="modalWithdrawSub">
+            Transfer your verified earnings directly to your preferred account.
+          </p>
+        </div>
+      </div>
+
+      <!-- Current Balance Card -->
+      <div class="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-indigo-900/60 mb-5 flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block" id="modalBalanceLabel">
+            Current Available Balance
+          </span>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span class="text-3xl sm:text-4xl font-black font-mono text-emerald-400">
+              $<span id="modalCurrentEarnings">0.00</span>
+            </span>
+            <span class="text-xs font-semibold text-slate-400">
+              USD (<span id="modalCurrentPoints">0</span> PTS)
+            </span>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <span class="text-[11px] text-slate-400 block font-semibold">Min Threshold</span>
+          <span class="text-sm font-extrabold text-indigo-300 font-mono">$100.00 USD</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Warning Notice (Requirement 3: Threshold Alert) -->
+      <div id="withdrawThresholdAlert" class="mb-5 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-200">
+        <div class="flex items-start gap-2.5">
+          <span class="text-lg">⚠️</span>
+          <div class="text-xs leading-relaxed">
+            <span class="font-extrabold block text-rose-300 mb-0.5" id="payoutMinNoticeText">
+              Minimum withdrawal threshold is $100.00 USD.
+            </span>
+            <span id="payoutNeedMoreText">
+              You need $100.00 more to request a payout.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Eligible Success Notice (shown if balance >= $100) -->
+      <div id="withdrawEligibleAlert" class="hidden mb-5 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-2.5">
+        <span class="text-lg">🎉</span>
+        <span class="text-xs font-semibold" id="payoutEligibleNoticeText">
+          Congratulations! You have reached the $100.00 threshold and are eligible to withdraw.
+        </span>
+      </div>
+
+      <!-- Payout Form -->
+      <form id="payoutForm" onsubmit="handlePayoutSubmit(event)" class="space-y-4">
+        
+        <!-- Payout Options -->
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-2" id="modalPayoutMethodLabel">
+            Select Payout Method
+          </label>
+          <div class="grid grid-cols-3 gap-2.5">
+            <button 
+              type="button" 
+              onclick="selectPayoutMethod('paypal')" 
+              id="methodPayPalBtn" 
+              class="p-3 rounded-xl border border-emerald-500 bg-emerald-500/10 text-white ring-1 ring-emerald-500/40 text-center transition-all cursor-pointer flex flex-col items-center gap-1.5"
+            >
+              <span class="text-base">🅿️</span>
+              <span class="text-[11px] font-bold">PayPal</span>
+            </button>
+            <button 
+              type="button" 
+              onclick="selectPayoutMethod('crypto')" 
+              id="methodCryptoBtn" 
+              class="p-3 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white text-center transition-all cursor-pointer flex flex-col items-center gap-1.5"
+            >
+              <span class="text-base">🪙</span>
+              <span class="text-[11px] font-bold">USDT / BTC</span>
+            </button>
+            <button 
+              type="button" 
+              onclick="selectPayoutMethod('bank')" 
+              id="methodBankBtn" 
+              class="p-3 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white text-center transition-all cursor-pointer flex flex-col items-center gap-1.5"
+            >
+              <span class="text-base">🏦</span>
+              <span class="text-[11px] font-bold">Bank Wire</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Destination Details -->
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-1.5" id="modalAccountDetailsLabel">
+            Destination Account Details
+          </label>
+          <input 
+            type="text" 
+            id="payoutDetailsInput" 
+            placeholder="PayPal account email (e.g. name@paypal.com)" 
+            class="w-full px-4 py-3 rounded-xl glass-input text-white text-xs placeholder:text-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <!-- Submit Button (Disabled when balance < $100) -->
+        <button 
+          type="submit" 
+          id="submitPayoutBtn"
+          disabled 
+          class="w-full py-4 rounded-2xl font-extrabold text-sm transition-all shadow-xl flex items-center justify-center gap-2 bg-slate-800/80 text-slate-500 border border-slate-700/40 cursor-not-allowed opacity-60"
+        >
+          <span>💳</span>
+          <span id="submitPayoutText">Submit Payout Request</span>
+        </button>
+
+        <p id="payoutHelpText" class="text-[11px] text-center text-slate-400">
+          🔒 Button unlocked automatically once you reach $100.00 USD (1,000 points).
+        </p>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- AUTHENTICATION MODAL (LOGIN & SIGN UP GLASSMORPHISM) -->
+  <!-- ========================================================= -->
+  <div id="authModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="w-full max-w-md glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl relative border border-indigo-500/30">
+      
+      <!-- Close button (allowed if already logged in) -->
+      <button 
+        id="authModalCloseBtn" 
+        onclick="closeAuthModal()" 
+        class="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg text-lg hidden"
+      >
+        ✕
+      </button>
+
+      <!-- Modal Header -->
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 mx-auto flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-500/30 mb-3">
+          ⚡
+        </div>
+        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="authHeaderTitle">
+          Access Rewards Portal
+        </h2>
+        <p class="text-xs text-slate-300 mt-1" id="authHeaderSub">
+          Log in or create a free member account to save points and enable cashouts.
+        </p>
+      </div>
+
+      <!-- Tab Buttons (Login vs Sign Up) -->
+      <div class="grid grid-cols-2 p-1 rounded-2xl bg-slate-900/90 border border-indigo-900/60 mb-6">
+        <button 
+          id="tabLoginBtn"
+          onclick="switchAuthTab('login')" 
+          class="py-2.5 rounded-xl font-bold text-xs transition-all bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/30"
+        >
+          <span id="tabLoginText">Log In</span>
+        </button>
+        <button 
+          id="tabSignupBtn"
+          onclick="switchAuthTab('signup')" 
+          class="py-2.5 rounded-xl font-bold text-xs transition-all text-slate-400 hover:text-white"
+        >
+          <span id="tabSignupText">Sign Up</span>
+        </button>
+      </div>
+
+      <!-- Alert Error Box -->
+      <div id="authAlertBox" class="hidden mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold text-center"></div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-1.5" id="labelLoginEmail">Email Address</label>
+          <input 
+            type="email" 
+            id="loginEmail" 
+            required 
+            placeholder="name@example.com" 
+            class="w-full px-4 py-3 rounded-xl glass-input text-white text-xs placeholder:text-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-1.5" id="labelLoginPassword">Password</label>
+          <input 
+            type="password" 
+            id="loginPassword" 
+            required 
+            placeholder="••••••••" 
+            class="w-full px-4 py-3 rounded-xl glass-input text-white text-xs placeholder:text-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3.5 rounded-xl font-extrabold text-xs sm:text-sm text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 transition-all shadow-xl shadow-indigo-600/30 cursor-pointer"
+          id="submitLoginBtn"
+        >
+          Log In to Account
+        </button>
+
+        <div class="text-center pt-2">
+          <span class="text-xs text-slate-400" id="promptNoAccount">Don't have an account?</span>
+          <button 
+            type="button" 
+            onclick="switchAuthTab('signup')" 
+            class="text-xs font-bold text-indigo-400 hover:text-indigo-300 ml-1 underline cursor-pointer"
+          >
+            Sign Up
+          </button>
+        </div>
+      </form>
+
+      <!-- SIGN UP FORM -->
+      <form id="signupForm" onsubmit="handleSignupSubmit(event)" class="space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-1.5" id="labelSignupName">Full Name</label>
+          <input 
+            type="text" 
+            id="signupName" 
+            required 
+            placeholder="e.g. Alex Johnson" 
+            class="w-full px-4 py-3 rounded-xl glass-input text-white text-xs placeholder:text-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-1.5" id="labelSignupEmail">Email Address</label>
+          <input 
+            type="email" 
+            id="signupEmail" 
+            required 
+            placeholder="name@example.com" 
+            class="w-full px-4 py-3 rounded-xl glass-input text-white text-xs placeholder:text-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-1.5" id="labelSignupPassword">Password</label>
+          <input 
+            type="password" 
+            id="signupPassword" 
+            required 
+            minlength="4"
+            placeholder="••••••••" 
+            class="w-full px-4 py-3 rounded-xl glass-input text-white text-xs placeholder:text-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-indigo-200 mb-1.5" id="labelSignupConfirm">Confirm Password</label>
+          <input 
+            type="password" 
+            id="signupConfirmPassword" 
+            required 
+            minlength="4"
+            placeholder="••••••••" 
+            class="w-full px-4 py-3 rounded-xl glass-input text-white text-xs placeholder:text-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3.5 rounded-xl font-extrabold text-xs sm:text-sm text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 transition-all shadow-xl shadow-indigo-600/30 cursor-pointer"
+          id="submitSignupBtn"
+        >
+          Create Free Account
+        </button>
+
+        <div class="text-center pt-2">
+          <span class="text-xs text-slate-400" id="promptAlreadyAccount">Already have an account?</span>
+          <button 
+            type="button" 
+            onclick="switchAuthTab('login')" 
+            class="text-xs font-bold text-indigo-400 hover:text-indigo-300 ml-1 underline cursor-pointer"
+          >
+            Log In
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="resetModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-indigo-900/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-left">
+      <div class="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-400 flex items-center justify-center text-2xl font-bold mb-4">
+        ⚠️
+      </div>
+      <h3 class="text-xl font-black text-white mb-2" id="modalResetTitle">Reset All Progress?</h3>
+      <p class="text-sm text-slate-300 mb-6 leading-relaxed" id="modalResetDesc">
+        This will permanently reset your earned points, click count, and earnings back to zero. This cannot be undone.
+      </p>
+
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          onclick="closeResetModal()"
+          class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+          id="modalCancelBtn"
+        >
+          Cancel
+        </button>
+        <button 
+          onclick="confirmResetAction()"
+          class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors shadow-lg shadow-rose-600/30 cursor-pointer"
+          id="modalConfirmBtn"
+        >
+          Yes, Reset Everything
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    const STORE_OFFER_URL = "https://www.profitableratecpmnetwork.com/h5can1a6kf?key=1f487ec4c12509fbc3ca2b1632129777";
+    const MIN_WITHDRAW_USD = 100.0;
+
+    // Supported translations
+    const TRANSLATIONS = {
+      en: {
+        brandName: "Click & Earn",
+        tagline: "Verified Global Rewards Platform",
+        badgeInstant: "✨ Instant Verification & Direct Payouts",
+        heroTitle1: "Click, Discover &",
+        heroHighlight: "Earn Real Cash",
+        heroSubtitle: "Visit verified partner offers and watch your balance grow instantly. Every click awards +1 Point guaranteed.",
+        buttonText: "CLAIM +1 POINT NOW",
+        buttonSubtext: "Opens official partner link · Awards +1 Point ($0.10 USD)",
+        successMessage: "+1 Point Earned!",
+        successSubtext: "+$0.10 USD added to your wallet balance",
+        currentPointsLabel: "Current Points",
+        pointsUnit: "PTS",
+        rateSubtext: "Conversion Rate: 10 Points = $1.00 USD",
+        earningsLabel: "Estimated Earnings",
+        earningsSubtext: "Real-time balance ready to withdraw",
+        clicksLabel: "Total Clicks",
+        clicksUnit: "VISITS",
+        clicksSubtext: "Total verified partner interactions",
+        resetButton: "Reset Progress",
+        resetModalTitle: "Reset All Progress?",
+        resetModalDesc: "This will permanently reset your earned points, click count, and earnings back to zero. This cannot be undone.",
+        resetConfirmBtn: "Yes, Reset Everything",
+        resetCancelBtn: "Cancel",
+        payoutGoalTitle: "Withdrawal Threshold ($100.00 USD / 1,000 Points)",
+        payoutGoalDesc: "Accumulate at least 1,000 points ($100.00 USD) to unlock instant payout via PayPal, Crypto, or Bank Transfer.",
+        detectedCountryLabel: "Detected Region",
+        detectingCountry: "Detecting location...",
+        loginTab: "Log In",
+        signupTab: "Sign Up",
+        authModalTitle: "Access Rewards Portal",
+        authModalSubtitle: "Log in or create a free member account to save points and enable cashouts.",
+        fullNameLabel: "Full Name",
+        fullNamePlaceholder: "e.g. Alex Johnson",
+        emailLabel: "Email Address",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "Password",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "Confirm Password",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "Log In to Account",
+        signupButton: "Create Free Account",
+        noAccountYet: "Don't have an account?",
+        alreadyHaveAccount: "Already have an account?",
+        logoutButton: "Logout",
+        withdrawButton: "Withdraw",
+        withdrawModalTitle: "Request Payout",
+        withdrawModalSubtitle: "Transfer your verified earnings directly to your preferred account.",
+        currentBalanceLabel: "Current Available Balance",
+        selectPayoutMethod: "Select Payout Method",
+        payoutMinNotice: "Minimum withdrawal threshold is $100.00 USD.",
+        payoutNeedMorePrefix: "You need $",
+        payoutNeedMoreSuffix: " more to request a payout.",
+        accountDetailsLabel: "Destination Account Details",
+        confirmWithdrawBtn: "Submit Payout Request"
+      },
+      bn: {
+        brandName: "ক্লিক ও আয়",
+        tagline: "যাচাইকৃত গ্লোবাল রিওয়ার্ড প্ল্যাটফর্ম",
+        badgeInstant: "✨ তাৎক্ষণিক পয়েন্ট ও নগদ আয়",
+        heroTitle1: "ক্লিক করুন এবং",
+        heroHighlight: "আসল টাকা আয় করুন",
+        heroSubtitle: "স্পনসর লিংক ভিজিট করুন এবং সঙ্গে সঙ্গে ওয়ালেটে পয়েন্ট সংগ্রহ করুন। প্রতি ক্লিকে নিশ্চিত +১ পয়েন্ট।",
+        buttonText: "এখনই +১ পয়েন্ট অর্জন করুন",
+        buttonSubtext: "অফিসিয়াল পার্টনার লিংক খুলবে · সাথে সাথে +১ পয়েন্ট ($০.১০) যোগ হবে",
+        successMessage: "+১ পয়েন্ট অর্জিত হয়েছে!",
+        successSubtext: "+$০.১০ ডলার আপনার ব্যালেন্সে যোগ হয়েছে",
+        currentPointsLabel: "বর্তমান পয়েন্ট",
+        pointsUnit: "পয়েন্ট",
+        rateSubtext: "রেট: ১০ পয়েন্ট = ১.০০ ডলার (USD)",
+        earningsLabel: "আনুমানিক আয়",
+        earningsSubtext: "উত্তোলনের জন্য প্রস্তুত মোট জমা",
+        clicksLabel: "মোট ক্লিক",
+        clicksUnit: "ভিজিট",
+        clicksSubtext: "সফলভাবে সম্পন্ন হওয়া ক্লিক সংখ্যা",
+        resetButton: "প্রোগ্রেস রিসেট করুন",
+        resetModalTitle: "সব প্রোগ্রেস মুছে ফেলতে চান?",
+        resetModalDesc: "আপনার সমস্ত অর্জিত পয়েন্ট এবং ক্লিকের হিসাব শূন্য হয়ে যাবে। এই পরিবর্তন আর ফেরানো যাবে না।",
+        resetConfirmBtn: "হ্যাঁ, রিসেট করুন",
+        resetCancelBtn: "বাতিল করুন",
+        payoutGoalTitle: "সর্বনিম্ন উত্তোলনের লক্ষ্য ($১০০.০০ / ১,০০০ পয়েন্ট)",
+        payoutGoalDesc: "১,০০০ পয়েন্ট ($১০০.০০) পূর্ণ হলেই নগদ টাকা উত্তোলনের সুযোগ আনলক হবে।",
+        detectedCountryLabel: "চিহ্নিত দেশ",
+        detectingCountry: "অবস্থান শনাক্ত করা হচ্ছে...",
+        loginTab: "লগইন",
+        signupTab: "সাইন আপ",
+        authModalTitle: "রিওয়ার্ড পোর্টালে প্রবেশ করুন",
+        authModalSubtitle: "পয়েন্ট সঞ্চয় এবং টাকা তোলার সুবিধা চালু করতে লগইন বা নতুন একাউন্ট খুলুন।",
+        fullNameLabel: "পুরো নাম",
+        fullNamePlaceholder: "যেমনঃ রহীম আহমেদ",
+        emailLabel: "ইমেইল এড্রেস",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "পাসওয়ার্ড",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "পাসওয়ার্ড নিশ্চিত করুন",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "একাউন্টে লগইন করুন",
+        signupButton: "ফ্রি একাউন্ট তৈরি করুন",
+        noAccountYet: "একাউন্ট নেই?",
+        alreadyHaveAccount: "ইতিমধ্যেই একাউন্ট আছে?",
+        logoutButton: "লগআউট",
+        withdrawButton: "উত্তোলন",
+        withdrawModalTitle: "টাকা উত্তোলনের আবেদন",
+        withdrawModalSubtitle: "আপনার উপার্জিত ব্যালেন্স প্রিয় একাউন্টে ট্রান্সফার করুন।",
+        currentBalanceLabel: "বর্তমান প্রাপ্ত ব্যালেন্স",
+        selectPayoutMethod: "পেমেন্ট মাধ্যম বেছে নিন",
+        payoutMinNotice: "সর্বনিম্ন উত্তোলনের সীমা ১০০.০০ ডলার (USD)।",
+        payoutNeedMorePrefix: "টাকা তুলতে আপনার আরও $",
+        payoutNeedMoreSuffix: " ডলার প্রয়োজন।",
+        accountDetailsLabel: "একাউন্ট নম্বর বা ইমেইল",
+        confirmWithdrawBtn: "উত্তোলনের রিকোয়েস্ট পাঠান"
+      },
+      hi: {
+        brandName: "क्लिक और कमाएं",
+        tagline: "सत्यापित वैश्विक रिवॉर्ड प्लेटफ़ॉर्म",
+        badgeInstant: "✨ तत्काल पॉइंट और नकद पुरस्कार",
+        heroTitle1: "क्लिक करें और",
+        heroHighlight: "असली नकद कमाएं",
+        heroSubtitle: "पार्टनर लिंक पर जाएं और तुरंत अपने खाते में पॉइंट बढ़ाएं। हर क्लिक पर निश्चित +1 पॉइंट पाएं।",
+        buttonText: "अभी +1 पॉइंट प्राप्त करें",
+        buttonSubtext: "पार्टनर लिंक खुलेगा · तुरंत +1 पॉइंट ($0.10) खाते में जुड़ेगा",
+        successMessage: "+1 पॉइंट मिल गया!",
+        successSubtext: "+$0.10 आपके वॉलेट बैलेंस में जोड़ दिया गया है",
+        currentPointsLabel: "वर्तमान पॉइंट्स",
+        pointsUnit: "अंक",
+        rateSubtext: "दर: 10 पॉइंट्स = $1.00 USD",
+        earningsLabel: "अनुमानित कमाई",
+        earningsSubtext: "निकासी के लिए तैयार कुल राशि",
+        clicksLabel: "कुल क्लिक",
+        clicksUnit: "विज़िट",
+        clicksSubtext: "सत्यापित पार्टनर क्लिक्स की संख्या",
+        resetButton: "प्रगति रीसेट करें",
+        resetModalTitle: "क्या आप सभी पॉइंट्स रीसेट करना चाहते हैं?",
+        resetModalDesc: "यह आपके सभी कमाए गए पॉइंट्स और क्लिक की संख्या को शून्य कर देगा। इसे पूर्ववत नहीं किया जा सकता।",
+        resetConfirmBtn: "हाँ, सब रीसेट करें",
+        resetCancelBtn: "रद्द करें",
+        payoutGoalTitle: "निकासी सीमा ($100.00 USD / 1,000 पॉइंट्स)",
+        payoutGoalDesc: "PayPal, Crypto या बैंक ट्रांसफर से तत्काल भुगतान प्राप्त करने के लिए 1,000 पॉइंट्स ($100.00) पूरे करें।",
+        detectedCountryLabel: "पहचाना गया देश",
+        detectingCountry: "स्थान का पता लगाया जा रहा है...",
+        loginTab: "लॉग इन",
+        signupTab: "साइन अप",
+        authModalTitle: "रिवॉर्ड पोर्टल में प्रवेश करें",
+        authModalSubtitle: "पॉइंट्स सुरक्षित रखने और निकासी शुरू करने के लिए लॉग इन या रजिस्टर करें।",
+        fullNameLabel: "पूरा नाम",
+        fullNamePlaceholder: "जैसे अमित शर्मा",
+        emailLabel: "ईमेल आईडी",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "पासवर्ड",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "पासवर्ड पुष्टि करें",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "खाते में लॉग इन करें",
+        signupButton: "नया खाता बनाएं",
+        noAccountYet: "खाता नहीं है?",
+        alreadyHaveAccount: "पहले से खाता है?",
+        logoutButton: "लॉगआउट",
+        withdrawButton: "निकासी",
+        withdrawModalTitle: "पैसे निकालने का अनुरोध",
+        withdrawModalSubtitle: "अपनी कमाई सीधे अपने पसंदीदा बैंक या खाते में ट्रांसफर करें।",
+        currentBalanceLabel: "वर्तमान उपलब्ध बैलेंस",
+        selectPayoutMethod: "भुगतान का तरीका चुनें",
+        payoutMinNotice: "न्यूनतम निकासी सीमा $100.00 USD है।",
+        payoutNeedMorePrefix: "निकासी के लिए आपको $",
+        payoutNeedMoreSuffix: " और चाहिए।",
+        accountDetailsLabel: "खाते का विवरण",
+        confirmWithdrawBtn: "निकासी अनुरोध भेजें"
+      },
+      fr: {
+        brandName: "Cliquez & Gagnez",
+        tagline: "Plateforme Mondiale de Récompenses Vérifiées",
+        badgeInstant: "✨ Vérification Immédiate & Gains Réels",
+        heroTitle1: "Cliquez et",
+        heroHighlight: "Gagnez de l'Argent Réel",
+        heroSubtitle: "Visitez les offres partenaires exclusives et boostez vos gains instantanément. Chaque clic rapporte +1 Point garanti.",
+        buttonText: "RÉCLAMER +1 POINT MAINTENANT",
+        buttonSubtext: "Ouvre le lien partenaire · Crédite +1 Point (0,10 $ USD)",
+        successMessage: "+1 Point Obtenu !",
+        successSubtext: "+0,10 $ USD ajouté avec succès à votre solde",
+        currentPointsLabel: "Points Actuels",
+        pointsUnit: "PTS",
+        rateSubtext: "Taux de conversion : 10 Points = 1,00 $ USD",
+        earningsLabel: "Gains Estimés",
+        earningsSubtext: "Solde disponible pour retrait immédiat",
+        clicksLabel: "Total des Clics",
+        clicksUnit: "VISITES",
+        clicksSubtext: "Interactions partenaires vérifiées",
+        resetButton: "Réinitialiser les Progrès",
+        resetModalTitle: "Réinitialiser tous vos points ?",
+        resetModalDesc: "Cette action effacera définitivement vos points accumulés et votre compteur de clics. Cette action est irréversible.",
+        resetConfirmBtn: "Oui, tout réinitialiser",
+        resetCancelBtn: "Annuler",
+        payoutGoalTitle: "Objectif de Retrait (100,00 $ USD / 1 000 Points)",
+        payoutGoalDesc: "Cumulez au moins 1 000 points (100,00 $ USD) pour débloquer votre paiement direct via PayPal, Crypto ou virement.",
+        detectedCountryLabel: "Région Détectée",
+        detectingCountry: "Localisation en cours...",
+        loginTab: "Connexion",
+        signupTab: "Inscription",
+        authModalTitle: "Accès au Portail Membre",
+        authModalSubtitle: "Connectez-vous ou créez un compte gratuit pour accumuler vos gains.",
+        fullNameLabel: "Nom Complet",
+        fullNamePlaceholder: "ex. Jean Dupont",
+        emailLabel: "Adresse E-mail",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "Mot de passe",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "Confirmer le mot de passe",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "Se Connecter",
+        signupButton: "Créer un Compte Gratuit",
+        noAccountYet: "Pas encore de compte ?",
+        alreadyHaveAccount: "Vous avez déjà un compte ?",
+        logoutButton: "Déconnexion",
+        withdrawButton: "Retrait",
+        withdrawModalTitle: "Demander un Retrait",
+        withdrawModalSubtitle: "Transférez vos gains validés directement vers votre compte favori.",
+        currentBalanceLabel: "Solde Actuel Disponible",
+        selectPayoutMethod: "Moyen de Paiement",
+        payoutMinNotice: "Le seuil minimum de retrait est de 100,00 $ USD.",
+        payoutNeedMorePrefix: "Il vous manque ",
+        payoutNeedMoreSuffix: " $ pour demander un virement.",
+        accountDetailsLabel: "Coordonnées de Réception",
+        confirmWithdrawBtn: "Confirmer la Demande de Retrait"
+      },
+      es: {
+        brandName: "Clic y Gana",
+        tagline: "Plataforma Global de Recompensas Verificadas",
+        badgeInstant: "✨ Verificación Instantánea y Pagos Directos",
+        heroTitle1: "Haz Clic y",
+        heroHighlight: "Gana Dinero Real",
+        heroSubtitle: "Visita los enlaces oficiales de nuestros patrocinadores y aumenta tus ganancias al instante. Cada clic otorga +1 Punto garantizado.",
+        buttonText: "RECLAMAR +1 PUNTO AHORA",
+        buttonSubtext: "Abre el enlace de socio oficial · Suma +1 Punto ($0.10 USD)",
+        successMessage: "¡+1 Punto Ganado!",
+        successSubtext: "+$0.10 USD acreditados a tu saldo",
+        currentPointsLabel: "Puntos Actuales",
+        pointsUnit: "PTS",
+        rateSubtext: "Tasa de conversión: 10 Puntos = $1.00 USD",
+        earningsLabel: "Ganancias Estimadas",
+        earningsSubtext: "Saldo listo para retirar en cualquier momento",
+        clicksLabel: "Total de Clics",
+        clicksUnit: "VISITAS",
+        clicksSubtext: "Interacciones verificadas con socios",
+        resetButton: "Restablecer Progreso",
+        resetModalTitle: "¿Restablecer todo el progreso?",
+        resetModalDesc: "Esta acción devolverá a cero todos tus puntos ganados y el contador de clics. No se puede deshacer.",
+        resetConfirmBtn: "Sí, restablecer todo",
+        resetCancelBtn: "Cancelar",
+        payoutGoalTitle: "Meta de Retiro Mínimo ($100.00 USD / 1,000 Puntos)",
+        payoutGoalDesc: "Alcanza los 1,000 puntos ($100.00 USD) para habilitar el retiro inmediato mediante PayPal, Cripto o Transferencia Bancaria.",
+        detectedCountryLabel: "País Detectado",
+        detectingCountry: "Detectando ubicación...",
+        loginTab: "Iniciar Sesión",
+        signupTab: "Registrarse",
+        authModalTitle: "Acceso al Portal de Recompensas",
+        authModalSubtitle: "Inicia sesión o crea una cuenta gratuita para guardar puntos y retirar dinero.",
+        fullNameLabel: "Nombre Completo",
+        fullNamePlaceholder: "ej. Carlos Gómez",
+        emailLabel: "Correo Electrónico",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "Contraseña",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "Confirmar Contraseña",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "Acceder a mi Cuenta",
+        signupButton: "Crear Cuenta Gratis",
+        noAccountYet: "¿No tienes una cuenta?",
+        alreadyHaveAccount: "¿Ya tienes cuenta?",
+        logoutButton: "Cerrar Sesión",
+        withdrawButton: "Retirar",
+        withdrawModalTitle: "Solicitar Retiro de Fondos",
+        withdrawModalSubtitle: "Transfiere tus ganancias acumuladas directamente a tu cuenta bancaria o monedero.",
+        currentBalanceLabel: "Saldo Actual Disponible",
+        selectPayoutMethod: "Seleccionar Método de Pago",
+        payoutMinNotice: "El monto mínimo de retiro es de $100.00 USD.",
+        payoutNeedMorePrefix: "Necesitas $",
+        payoutNeedMoreSuffix: " más para solicitar un retiro.",
+        accountDetailsLabel: "Datos de la Cuenta de Destino",
+        confirmWithdrawBtn: "Confirmar Solicitud de Retiro"
+      },
+      ar: {
+        brandName: "انقر واربح",
+        tagline: "منصة المكافآت العالمية الموثوقة",
+        badgeInstant: "✨ نقاط فورية وسحب أرباح حقيقية",
+        heroTitle1: "انقر الآن و",
+        heroHighlight: "اربح أموالاً حقيقية",
+        heroSubtitle: "قم بزيارة روابط الشركاء المعتمدين واكسب النقاط على الفور. كل نقرة تمنحك +1 نقطة مؤكدة.",
+        buttonText: "احصل على +1 نقطة الآن",
+        buttonSubtext: "يفتح رابط الشريك الرسمي · يمنح +1 نقطة (0.10 دولار)",
+        successMessage: "تم كسب +1 نقطة بنجاح!",
+        successSubtext: "تمت إضافة +0.10 دولار إلى رصيدك الحالي",
+        currentPointsLabel: "النقاط الحالية",
+        pointsUnit: "نقطة",
+        rateSubtext: "معدل التحويل: 10 نقاط = 1.00 دولار أمريكي",
+        earningsLabel: "الأرباح المقدرة",
+        earningsSubtext: "رصيدك المتاح للسحب الفوري",
+        clicksLabel: "إجمالي النقرات",
+        clicksUnit: "زيارة",
+        clicksSubtext: "عدد الزيارات المكتملة بنجاح",
+        resetButton: "إعادة ضبط التقدم",
+        resetModalTitle: "هل تريد مسح جميع النقاط؟",
+        resetModalDesc: "سيؤدي هذا إلى تصفير كافة النقاط والنقرات المسجلة في حسابك ولا يمكن التراجع عن هذا الإجراء.",
+        resetConfirmBtn: "نعم، أعد الضبط بالكامل",
+        resetCancelBtn: "إلغاء",
+        payoutGoalTitle: "الحد الأدنى للسحب (100.00 دولار / 1,000 نقطة)",
+        payoutGoalDesc: "اجمع 1,000 نقطة (100.00 دولار) للتمكن من سحب أرباحك مباشرة عبر PayPal أو العملات الرقمية أو الحساب البنكي.",
+        detectedCountryLabel: "الدولة المكتشفة",
+        detectingCountry: "جاري تحديد الموقع...",
+        loginTab: "تسجيل الدخول",
+        signupTab: "إنشاء حساب",
+        authModalTitle: "بوابة الوصول إلى المكافآت",
+        authModalSubtitle: "سجل الدخول أو أنشئ حساباً مجانياً لحفظ نقاطك وتفعيل السحب النقدي.",
+        fullNameLabel: "الاسم الكامل",
+        fullNamePlaceholder: "مثال: أحمد محمد",
+        emailLabel: "البريد الإلكتروني",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "كلمة المرور",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "تأكيد كلمة المرور",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "تسجيل الدخول الآن",
+        signupButton: "إنشاء حساب مجاني",
+        noAccountYet: "ليس لديك حساب بعد؟",
+        alreadyHaveAccount: "هل لديك حساب بالفعل؟",
+        logoutButton: "تسجيل الخروج",
+        withdrawButton: "سحب الأرباح",
+        withdrawModalTitle: "طلب سحب الأرباح",
+        withdrawModalSubtitle: "حوّل أرباحك المؤكدة مباشرة إلى وسيلة الدفع المفضلة لديك.",
+        currentBalanceLabel: "الرصيد الحالي المتاح",
+        selectPayoutMethod: "اختر وسيلة السحب",
+        payoutMinNotice: "الحد الأدنى للسحب هو 100.00 دولار أمريكي.",
+        payoutNeedMorePrefix: "تحتاج إلى $",
+        payoutNeedMoreSuffix: " إضافية لتقديم طلب السحب.",
+        accountDetailsLabel: "بيانات الحساب أو المحفظة",
+        confirmWithdrawBtn: "تأكيد طلب السحب"
+      },
+      pt: {
+        brandName: "Clique & Ganhe",
+        tagline: "Plataforma Global de Recompensas Verificadas",
+        badgeInstant: "✨ Verificação Instantânea e Pagamentos Reais",
+        heroTitle1: "Clique e",
+        heroHighlight: "Ganhe Dinheiro Real",
+        heroSubtitle: "Visite links de parceiros oficiais e acumule pontos imediatamente. Cada clique garante +1 Ponto direto na sua conta.",
+        buttonText: "RESGATAR +1 PONTO AGORA",
+        buttonSubtext: "Abre o link oficial de parceiro · Concede +1 Ponto ($0,10 USD)",
+        successMessage: "+1 Ponto Ganho!",
+        successSubtext: "+$0,10 USD adicionados ao seu saldo",
+        currentPointsLabel: "Pontos Atuais",
+        pointsUnit: "PTS",
+        rateSubtext: "Taxa de Conversão: 10 Pontos = $1,00 USD",
+        earningsLabel: "Ganhos Estimados",
+        earningsSubtext: "Saldo em tempo real disponível para saque",
+        clicksLabel: "Total de Cliques",
+        clicksUnit: "VISITAS",
+        clicksSubtext: "Total de visitas verificadas",
+        resetButton: "Redefinir Progresso",
+        resetModalTitle: "Redefinir todo o progresso?",
+        resetModalDesc: "Isso zerará permanentemente seus pontos acumulados e contagem de cliques. Esta ação não pode ser desfeita.",
+        resetConfirmBtn: "Sim, Redefinir Tudo",
+        resetCancelBtn: "Cancelar",
+        payoutGoalTitle: "Meta Mínima de Saque ($100,00 USD / 1.000 Pontos)",
+        payoutGoalDesc: "Acumule pelo menos 1.000 pontos ($100,00 USD) para liberar o pagamento via PayPal, Cripto ou Transferência Bancária.",
+        detectedCountryLabel: "País Detectado",
+        detectingCountry: "Detectando localização...",
+        loginTab: "Entrar",
+        signupTab: "Cadastrar",
+        authModalTitle: "Acesso ao Portal de Recompensas",
+        authModalSubtitle: "Entre ou crie sua conta gratuita para salvar pontos e solicitar pagamentos.",
+        fullNameLabel: "Nome Completo",
+        fullNamePlaceholder: "ex: Lucas Silva",
+        emailLabel: "Endereço de E-mail",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "Senha",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "Confirmar Senha",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "Acessar Conta",
+        signupButton: "Criar Conta Gratuita",
+        noAccountYet: "Não tem uma conta?",
+        alreadyHaveAccount: "Já possui uma conta?",
+        logoutButton: "Sair",
+        withdrawButton: "Sacar",
+        withdrawModalTitle: "Solicitar Saque",
+        withdrawModalSubtitle: "Transfira seus ganhos verificados diretamente para sua conta favorita.",
+        currentBalanceLabel: "Saldo Atual Disponível",
+        selectPayoutMethod: "Selecione o Método de Saque",
+        payoutMinNotice: "O limite mínimo de saque é de $100,00 USD.",
+        payoutNeedMorePrefix: "Você precisa de mais $",
+        payoutNeedMoreSuffix: " para solicitar um saque.",
+        accountDetailsLabel: "Dados da Conta de Destino",
+        confirmWithdrawBtn: "Confirmar Solicitação de Saque"
+      },
+      de: {
+        brandName: "Klick & Verdien",
+        tagline: "Verifizierte globale Belohnungsplattform",
+        badgeInstant: "✨ Sofortige Gutschrift & Echte Auszahlungen",
+        heroTitle1: "Klicken &",
+        heroHighlight: "Echtes Geld Verdienen",
+        heroSubtitle: "Besuche exklusive Partnerangebote und baue dein Guthaben sofort auf. Jeder Klick bringt dir garantiert +1 Punkt.",
+        buttonText: "JETZT +1 PUNKT SICHERN",
+        buttonSubtext: "Öffnet offiziellen Partnerlink · Schreibt +1 Punkt (0,10 $ USD) gut",
+        successMessage: "+1 Punkt Verdient!",
+        successSubtext: "+0,10 $ USD wurden deinem Guthaben hinzugefügt",
+        currentPointsLabel: "Aktuelle Punkte",
+        pointsUnit: "PKT",
+        rateSubtext: "Umrechnung: 10 Punkte = 1,00 $ USD",
+        earningsLabel: "Geschätzter Verdienst",
+        earningsSubtext: "Sofort auszahlbares Guthaben",
+        clicksLabel: "Gesamte Klicks",
+        clicksUnit: "BESUCHE",
+        clicksSubtext: "Bestätigte Interaktionen",
+        resetButton: "Fortschritt Zurücksetzen",
+        resetModalTitle: "Gesamten Fortschritt zurücksetzen?",
+        resetModalDesc: "Dadurch werden alle deine gesammelten Punkte und Klicks unwiderruflich auf null zurückgesetzt.",
+        resetConfirmBtn: "Ja, alles zurücksetzen",
+        resetCancelBtn: "Abbrechen",
+        payoutGoalTitle: "Auszahlungsziel (100,00 $ USD / 1.000 Punkte)",
+        payoutGoalDesc: "Erreiche 1.000 Punkte (100,00 $ USD) für eine direkte Auszahlung per PayPal, Krypto oder Banküberweisung.",
+        detectedCountryLabel: "Erkanntes Land",
+        detectingCountry: "Standort wird ermittelt...",
+        loginTab: "Anmelden",
+        signupTab: "Registrieren",
+        authModalTitle: "Zugang zum Belohnungsportal",
+        authModalSubtitle: "Melde dich an oder erstelle ein kostenloses Konto, um Punkte zu speichern.",
+        fullNameLabel: "Vollständiger Name",
+        fullNamePlaceholder: "z.B. Max Mustermann",
+        emailLabel: "E-Mail-Adresse",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "Passwort",
+        passwordPlaceholder: "••••••••",
+        confirmPasswordLabel: "Passwort bestätigen",
+        confirmPasswordPlaceholder: "••••••••",
+        loginButton: "Jetzt Anmelden",
+        signupButton: "Kostenloses Konto erstellen",
+        noAccountYet: "Noch kein Konto?",
+        alreadyHaveAccount: "Bereits ein Konto?",
+        logoutButton: "Abmelden",
+        withdrawButton: "Auszahlen",
+        withdrawModalTitle: "Auszahlung Beantragen",
+        withdrawModalSubtitle: "Übertrage dein verifiziertes Guthaben direkt auf dein gewünschtes Konto.",
+        currentBalanceLabel: "Aktuelles Verfügbares Guthaben",
+        selectPayoutMethod: "Auszahlungsmethode Wählen",
+        payoutMinNotice: "Der Mindestauszahlungsbetrag beträgt 100,00 $ USD.",
+        payoutNeedMorePrefix: "Du benötigst noch $",
+        payoutNeedMoreSuffix: ", um eine Auszahlung zu beantragen.",
+        accountDetailsLabel: "Empfänger-Kontodaten",
+        confirmWithdrawBtn: "Auszahlungsantrag Einreichen"
+      }
+    };
+
+    const COUNTRY_LANG_MAP = {
+      BD: 'bn', IN: 'hi', PK: 'hi', US: 'en', GB: 'en', CA: 'en', AU: 'en',
+      FR: 'fr', BE: 'fr', ES: 'es', MX: 'es', AR: 'es', SA: 'ar', AE: 'ar',
+      EG: 'ar', BR: 'pt', PT: 'pt', DE: 'de', AT: 'de'
+    };
+
+    const COUNTRY_FLAGS = {
+      BD: '🇧🇩', IN: '🇮🇳', PK: '🇵🇰', US: '🇺🇸', GB: '🇬🇧', CA: '🇨🇦', AU: '🇦🇺',
+      FR: '🇫🇷', BE: '🇧🇪', ES: '🇪🇸', MX: '🇲🇽', AR: '🇦🇷', SA: '🇸🇦', AE: '🇦🇪',
+      EG: '🇪🇬', BR: '🇧🇷', PT: '🇵🇹', DE: '🇩🇪', AT: '🇦🇹'
+    };
+
+    // State Variables
+    let points = parseInt(localStorage.getItem('ce_points') || '0', 10);
+    let clicks = parseInt(localStorage.getItem('ce_clicks') || '0', 10);
+    let currentLang = localStorage.getItem('ce_lang') || 'en';
+    let currentUser = null;
+    let selectedPayoutMethod = 'paypal';
+
+    try {
+      currentUser = JSON.parse(localStorage.getItem('ce_auth_user') || 'null');
+    } catch (e) {
+      currentUser = null;
+    }
+
+    let registeredUsers = [];
+    try {
+      registeredUsers = JSON.parse(localStorage.getItem('ce_registered_users') || '[]');
+    } catch (e) {
+      registeredUsers = [];
+    }
+
+    // Elements
+    const authModal = document.getElementById('authModal');
+    const authModalCloseBtn = document.getElementById('authModalCloseBtn');
+    const authAlertBox = document.getElementById('authAlertBox');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const tabLoginBtn = document.getElementById('tabLoginBtn');
+    const tabSignupBtn = document.getElementById('tabSignupBtn');
+    const authNoticeBanner = document.getElementById('authNoticeBanner');
+    const userProfileArea = document.getElementById('userProfileArea');
+    const navUserName = document.getElementById('navUserName');
+    const navLoginBtn = document.getElementById('navLoginBtn');
+
+    const withdrawModal = document.getElementById('withdrawModal');
+    const modalCurrentEarnings = document.getElementById('modalCurrentEarnings');
+    const modalCurrentPoints = document.getElementById('modalCurrentPoints');
+    const withdrawThresholdAlert = document.getElementById('withdrawThresholdAlert');
+    const withdrawEligibleAlert = document.getElementById('withdrawEligibleAlert');
+    const payoutNeedMoreText = document.getElementById('payoutNeedMoreText');
+    const submitPayoutBtn = document.getElementById('submitPayoutBtn');
+    const payoutDetailsInput = document.getElementById('payoutDetailsInput');
+    const payoutHelpText = document.getElementById('payoutHelpText');
+
+    const statPoints = document.getElementById('statPoints');
+    const statEarnings = document.getElementById('statEarnings');
+    const statClicks = document.getElementById('statClicks');
+    const payoutProgressBar = document.getElementById('payoutProgressBar');
+    const payoutGoalPercent = document.getElementById('payoutGoalPercent');
+    const countryFlag = document.getElementById('countryFlag');
+    const countryName = document.getElementById('countryName');
+    const languageSelect = document.getElementById('languageSelect');
+    const toastNotification = document.getElementById('toastNotification');
+    const resetModal = document.getElementById('resetModal');
+
+    // Withdraw Modal Logic (Requirements 1, 2, 3)
+    function openWithdrawModal() {
+      if (!currentUser) {
+        openAuthModal('login');
+        showAuthAlert("Please sign in or create an account to request a payout.");
+        return;
+      }
+
+      updateWithdrawUI();
+      withdrawModal.classList.remove('hidden');
+    }
+
+    function closeWithdrawModal() {
+      withdrawModal.classList.add('hidden');
+    }
+
+    function selectPayoutMethod(method) {
+      selectedPayoutMethod = method;
+      const paypalBtn = document.getElementById('methodPayPalBtn');
+      const cryptoBtn = document.getElementById('methodCryptoBtn');
+      const bankBtn = document.getElementById('methodBankBtn');
+
+      const defaultClass = "p-3 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white text-center transition-all cursor-pointer flex flex-col items-center gap-1.5";
+      const activeClass = "p-3 rounded-xl border border-emerald-500 bg-emerald-500/10 text-white ring-1 ring-emerald-500/40 text-center transition-all cursor-pointer flex flex-col items-center gap-1.5";
+
+      paypalBtn.className = method === 'paypal' ? activeClass : defaultClass;
+      cryptoBtn.className = method === 'crypto' ? activeClass : defaultClass;
+      bankBtn.className = method === 'bank' ? activeClass : defaultClass;
+
+      if (method === 'paypal') {
+        payoutDetailsInput.placeholder = "PayPal account email (e.g. name@paypal.com)";
+      } else if (method === 'crypto') {
+        payoutDetailsInput.placeholder = "USDT (TRC20) or BTC wallet address";
+      } else {
+        payoutDetailsInput.placeholder = "Bank Account Number / IBAN & Routing SWIFT";
+      }
+    }
+
+    function updateWithdrawUI() {
+      const dollar = points / 10;
+      modalCurrentEarnings.textContent = dollar.toFixed(2);
+      modalCurrentPoints.textContent = points;
+
+      const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+
+      if (dollar < MIN_WITHDRAW_USD) {
+        const needed = (MIN_WITHDRAW_USD - dollar).toFixed(2);
+        withdrawThresholdAlert.classList.remove('hidden');
+        withdrawEligibleAlert.classList.add('hidden');
+        payoutNeedMoreText.innerHTML = (t.payoutNeedMorePrefix || "You need $") + '<strong class="font-mono font-bold text-white text-sm underline">' + needed + '</strong>' + (t.payoutNeedMoreSuffix || " more to request a payout.");
+        
+        // Disable button
+        submitPayoutBtn.disabled = true;
+        submitPayoutBtn.className = "w-full py-4 rounded-2xl font-extrabold text-sm transition-all shadow-xl flex items-center justify-center gap-2 bg-slate-800/80 text-slate-500 border border-slate-700/40 cursor-not-allowed opacity-60";
+        payoutHelpText.classList.remove('hidden');
+      } else {
+        withdrawThresholdAlert.classList.add('hidden');
+        withdrawEligibleAlert.classList.remove('hidden');
+        
+        // Enable button
+        submitPayoutBtn.disabled = false;
+        submitPayoutBtn.className = "w-full py-4 rounded-2xl font-extrabold text-sm transition-all shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-emerald-500/30 cursor-pointer transform hover:scale-[1.01]";
+        payoutHelpText.classList.add('hidden');
+      }
+    }
+
+    function handlePayoutSubmit(e) {
+      e.preventDefault();
+      const dollar = points / 10;
+      if (dollar < MIN_WITHDRAW_USD) {
+        alert("Minimum withdrawal threshold is $100.00 USD.");
+        return;
+      }
+
+      const details = payoutDetailsInput.value.trim();
+      if (!details) {
+        alert("Please enter your payout destination account details.");
+        return;
+      }
+
+      alert("Payout request for $" + dollar.toFixed(2) + " submitted successfully! Our verification team will process it within 24 hours.");
+      closeWithdrawModal();
+      payoutDetailsInput.value = "";
+    }
+
+    // Authentication Modal Management
+    function openAuthModal(tab = 'login') {
+      authAlertBox.classList.add('hidden');
+      switchAuthTab(tab);
+      authModal.classList.remove('hidden');
+
+      if (currentUser) {
+        authModalCloseBtn.classList.remove('hidden');
+      } else {
+        authModalCloseBtn.classList.add('hidden');
+      }
+    }
+
+    function closeAuthModal() {
+      if (!currentUser) return;
+      authModal.classList.add('hidden');
+    }
+
+    function switchAuthTab(tab) {
+      authAlertBox.classList.add('hidden');
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        tabLoginBtn.className = "py-2.5 rounded-xl font-bold text-xs transition-all bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/30";
+        tabSignupBtn.className = "py-2.5 rounded-xl font-bold text-xs transition-all text-slate-400 hover:text-white";
+      } else {
+        loginForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+        tabSignupBtn.className = "py-2.5 rounded-xl font-bold text-xs transition-all bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/30";
+        tabLoginBtn.className = "py-2.5 rounded-xl font-bold text-xs transition-all text-slate-400 hover:text-white";
+      }
+    }
+
+    function showAuthAlert(msg) {
+      authAlertBox.textContent = msg;
+      authAlertBox.classList.remove('hidden');
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showAuthAlert("Please fill in both email and password.");
+        return;
+      }
+
+      const found = registeredUsers.find(u => u.email.toLowerCase() === email && u.password === password);
+      
+      let userObj;
+      if (found) {
+        userObj = { name: found.name, email: found.email };
+      } else if (registeredUsers.length === 0) {
+        const demoName = email.split('@')[0];
+        userObj = { name: demoName.charAt(0).toUpperCase() + demoName.slice(1), email: email };
+        registeredUsers.push({ name: userObj.name, email: email, password: password });
+        localStorage.setItem('ce_registered_users', JSON.stringify(registeredUsers));
+      } else {
+        showAuthAlert("Invalid email or password. Please sign up if you don't have an account.");
+        return;
+      }
+
+      loginUserSession(userObj);
+    }
+
+    function handleSignupSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('signupConfirmPassword').value;
+
+      if (!name || !email || !password) {
+        showAuthAlert("Please complete all required fields.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showAuthAlert("Passwords do not match. Please verify.");
+        return;
+      }
+
+      const existing = registeredUsers.find(u => u.email.toLowerCase() === email);
+      if (existing) {
+        showAuthAlert("An account with this email already exists. Please log in.");
+        return;
+      }
+
+      const newUser = { name, email, password };
+      registeredUsers.push(newUser);
+      localStorage.setItem('ce_registered_users', JSON.stringify(registeredUsers));
+
+      loginUserSession({ name, email });
+    }
+
+    function loginUserSession(user) {
+      currentUser = user;
+      localStorage.setItem('ce_auth_user', JSON.stringify(user));
+      authModal.classList.add('hidden');
+      updateAuthUI();
+      playChime();
+    }
+
+    function handleLogout() {
+      if (confirm("Are you sure you want to log out of your session?")) {
+        currentUser = null;
+        localStorage.removeItem('ce_auth_user');
+        updateAuthUI();
+        closeWithdrawModal();
+        openAuthModal('login');
+      }
+    }
+
+    function updateAuthUI() {
+      if (currentUser) {
+        authNoticeBanner.classList.add('hidden');
+        userProfileArea.classList.remove('hidden');
+        userProfileArea.classList.add('flex');
+        navLoginBtn.classList.add('hidden');
+        navUserName.textContent = currentUser.name;
+        authModal.classList.add('hidden');
+      } else {
+        authNoticeBanner.classList.remove('hidden');
+        userProfileArea.classList.add('hidden');
+        userProfileArea.classList.remove('flex');
+        navLoginBtn.classList.remove('hidden');
+        authModal.classList.remove('hidden');
+        authModalCloseBtn.classList.add('hidden');
+      }
+    }
+
+    // Update numbers & progress to $100.00 USD threshold
+    function updateStats() {
+      statPoints.textContent = points;
+      const dollarNum = points / 10;
+      const dollar = dollarNum.toFixed(2);
+      statEarnings.textContent = dollar;
+      statClicks.textContent = clicks;
+
+      // $100.00 goal (1,000 points)
+      const pct = Math.min(100, Math.round((dollarNum / MIN_WITHDRAW_USD) * 100));
+      payoutProgressBar.style.width = pct + '%';
+      payoutGoalPercent.textContent = pct + '%';
+
+      localStorage.setItem('ce_points', points.toString());
+      localStorage.setItem('ce_clicks', clicks.toString());
+
+      updateWithdrawUI();
+    }
+
+    function playChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        const freqs = [523.25, 659.25, 783.99, 1046.50];
+        freqs.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.07);
+          gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.07 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.07);
+          osc.stop(now + idx * 0.07 + 0.36);
+        });
+      } catch (e) {}
+    }
+
+    function handleClickAndEarn() {
+      if (!currentUser) {
+        openAuthModal('login');
+        showAuthAlert("Please log in or sign up first to earn points!");
+        return;
+      }
+
+      window.open(STORE_OFFER_URL, '_blank', 'noopener,noreferrer');
+      points += 1;
+      clicks += 1;
+      updateStats();
+      playChime();
+      showSuccessToast();
+    }
+
+    let toastTimeout = null;
+    function showSuccessToast() {
+      const t = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+      document.getElementById('toastTitle').textContent = t.successMessage;
+      document.getElementById('toastSub').textContent = t.successSubtext;
+
+      toastNotification.classList.remove('hidden');
+      toastNotification.classList.remove('animate-float-badge');
+      void toastNotification.offsetWidth;
+      toastNotification.classList.add('animate-float-badge');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastNotification.classList.add('hidden');
+      }, 2300);
+    }
+
+    function changeLanguage(lang) {
+      if (!TRANSLATIONS[lang]) lang = 'en';
+      currentLang = lang;
+      localStorage.setItem('ce_lang', lang);
+      languageSelect.value = lang;
+
+      const t = TRANSLATIONS[lang];
+      document.documentElement.lang = lang;
+
+      if (lang === 'ar') {
+        document.documentElement.setAttribute('dir', 'rtl');
+      } else {
+        document.documentElement.setAttribute('dir', 'ltr');
+      }
+
+      document.getElementById('headerBrand').textContent = t.brandName;
+      document.getElementById('footerBrand').textContent = t.brandName;
+      document.getElementById('headerTagline').textContent = t.tagline;
+      document.getElementById('heroBadge').textContent = t.badgeInstant;
+      document.getElementById('heroTitle1').textContent = t.heroTitle1;
+      document.getElementById('heroHighlight').textContent = t.heroHighlight;
+      document.getElementById('heroSubtitle').textContent = t.heroSubtitle;
+      document.getElementById('mainBtnText').textContent = t.buttonText;
+      document.getElementById('mainBtnSubtext').textContent = t.buttonSubtext;
+      
+      document.getElementById('labelPoints').textContent = t.currentPointsLabel;
+      document.getElementById('unitPoints').textContent = t.pointsUnit;
+      document.getElementById('statRate').textContent = t.rateSubtext;
+
+      document.getElementById('labelEarnings').textContent = t.earningsLabel;
+      document.getElementById('earningsSub').textContent = t.earningsSubtext;
+
+      document.getElementById('labelClicks').textContent = t.clicksLabel;
+      document.getElementById('unitClicks').textContent = t.clicksUnit;
+      document.getElementById('clicksSub').textContent = t.clicksSubtext;
+
+      document.getElementById('payoutGoalTitle').textContent = t.payoutGoalTitle;
+      document.getElementById('payoutGoalDesc').textContent = t.payoutGoalDesc;
+      document.getElementById('resetBtnLabel').textContent = t.resetButton;
+
+      document.getElementById('modalResetTitle').textContent = t.resetModalTitle;
+      document.getElementById('modalResetDesc').textContent = t.resetModalDesc;
+      document.getElementById('modalConfirmBtn').textContent = t.resetConfirmBtn;
+      document.getElementById('modalCancelBtn').textContent = t.resetCancelBtn;
+
+      // Auth strings
+      document.getElementById('authHeaderTitle').textContent = t.authModalTitle;
+      document.getElementById('authHeaderSub').textContent = t.authModalSubtitle;
+      document.getElementById('tabLoginText').textContent = t.loginTab;
+      document.getElementById('tabSignupText').textContent = t.signupTab;
+      document.getElementById('labelLoginEmail').textContent = t.emailLabel;
+      document.getElementById('labelLoginPassword').textContent = t.passwordLabel;
+      document.getElementById('submitLoginBtn').textContent = t.loginButton;
+      document.getElementById('promptNoAccount').textContent = t.noAccountYet;
+      document.getElementById('labelSignupName').textContent = t.fullNameLabel;
+      document.getElementById('labelSignupEmail').textContent = t.emailLabel;
+      document.getElementById('labelSignupPassword').textContent = t.passwordLabel;
+      document.getElementById('labelSignupConfirm').textContent = t.confirmPasswordLabel;
+      document.getElementById('submitSignupBtn').textContent = t.signupButton;
+      document.getElementById('promptAlreadyAccount').textContent = t.alreadyHaveAccount;
+      document.getElementById('navLogoutText').textContent = t.logoutButton;
+
+      // Withdraw strings
+      if (document.getElementById('navWithdrawText')) document.getElementById('navWithdrawText').textContent = t.withdrawButton;
+      if (document.getElementById('milestoneWithdrawBtn')) document.getElementById('milestoneWithdrawBtn').textContent = t.withdrawButton;
+      if (document.getElementById('modalWithdrawTitle')) document.getElementById('modalWithdrawTitle').textContent = t.withdrawModalTitle;
+      if (document.getElementById('modalWithdrawSub')) document.getElementById('modalWithdrawSub').textContent = t.withdrawModalSubtitle;
+      if (document.getElementById('modalBalanceLabel')) document.getElementById('modalBalanceLabel').textContent = t.currentBalanceLabel;
+      if (document.getElementById('modalPayoutMethodLabel')) document.getElementById('modalPayoutMethodLabel').textContent = t.selectPayoutMethod;
+      if (document.getElementById('modalAccountDetailsLabel')) document.getElementById('modalAccountDetailsLabel').textContent = t.accountDetailsLabel;
+      if (document.getElementById('submitPayoutText')) document.getElementById('submitPayoutText').textContent = t.confirmWithdrawBtn;
+      if (document.getElementById('payoutMinNoticeText')) document.getElementById('payoutMinNoticeText').textContent = t.payoutMinNotice;
+
+      updateWithdrawUI();
+    }
+
+    async function detectUserCountry() {
+      const savedLang = localStorage.getItem('ce_lang');
+
+      try {
+        const response = await fetch('https://ipapi.co/json/', { cache: 'no-cache' });
+        if (!response.ok) throw new Error('ipapi request failed');
+        const data = await response.json();
+        
+        if (data && data.country_code) {
+          const code = data.country_code.toUpperCase();
+          const name = data.country_name || code;
+          
+          countryFlag.textContent = COUNTRY_FLAGS[code] || '📍';
+          countryName.textContent = name;
+
+          if (!savedLang && COUNTRY_LANG_MAP[code]) {
+            changeLanguage(COUNTRY_LANG_MAP[code]);
+            return;
+          }
+        }
+      } catch (err) {
+        try {
+          const fallbackRes = await fetch('https://api.country.is/', { cache: 'no-cache' });
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            if (fallbackData.country) {
+              const code = fallbackData.country.toUpperCase();
+              countryFlag.textContent = COUNTRY_FLAGS[code] || '📍';
+              countryName.textContent = code;
+              if (!savedLang && COUNTRY_LANG_MAP[code]) {
+                changeLanguage(COUNTRY_LANG_MAP[code]);
+                return;
+              }
+            }
+          }
+        } catch (e2) {}
+
+        countryFlag.textContent = '🌐';
+        countryName.textContent = 'Global (EN)';
+      }
+
+      if (savedLang) {
+        changeLanguage(savedLang);
+      } else {
+        changeLanguage('en');
+      }
+    }
+
+    function openResetModal() {
+      resetModal.classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      resetModal.classList.add('hidden');
+    }
+
+    function confirmResetAction() {
+      points = 0;
+      clicks = 0;
+      updateStats();
+      closeResetModal();
+    }
+
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+    updateStats();
+    updateAuthUI();
+    detectUserCountry();
+  </script>
+</body>
+</html>
